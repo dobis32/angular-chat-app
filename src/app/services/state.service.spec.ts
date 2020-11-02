@@ -37,9 +37,15 @@ describe('StateService', () => {
 		expect(Array.isArray(service._getCurrentUserSubscribers()));
 	});
 
+	it('should have an array for current user subscribers/observers', () => {
+		expect(Array.isArray(service._getLoggedInStatusSubscribers()));
+	});
+
 	it('should have a chat log', () => {
 		expect(Array.isArray(service._getChatLog()));
 	});
+
+	it('should have a function');
 
 	it('should have the data for the current user', () => {
 		expect(typeof service._getCurrentUser()).toEqual('string');

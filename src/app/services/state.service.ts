@@ -10,9 +10,11 @@ import { Socket } from '../util/socket.interface';
 export class StateService {
 	private _socketSubscriptions: Array<Subscription>;
 	private _chatLogSubscribers: Array<Observer<Array<ChatMessage>>>;
-	private _currentUserSubscribers: Array<Observer<String>>;
+	private _currentUserSubscribers: Array<Observer<string>>;
+	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
 	private _chatLog: Array<ChatMessage>;
 	private _currentUser: string;
+
 	constructor(private socketService: SocketService) {
 		// Init values
 		this._chatLog = new Array();
@@ -20,6 +22,7 @@ export class StateService {
 		this._socketSubscriptions = new Array();
 		this._chatLogSubscribers = new Array();
 		this._currentUserSubscribers = new Array();
+		this._loggedInStatusSubscribers = new Array();
 
 		// Init subs
 		this.resetSocketSubs();
@@ -86,6 +89,22 @@ export class StateService {
 		});
 	}
 
+	logout() {
+		this._currentUser = '';
+		this._loggedInStatusSubscribers.forEach((obs: Observer<any>) => {
+			obs.next(false);
+		});
+	}
+
+	loggedInStatus(): Observable<boolean> {
+		return new Observable((subscriber: Observer<boolean>) => {
+			let bool = this._currentUser.length ? true : false;
+
+			this._loggedInStatusSubscribers.push(subscriber);
+			subscriber.next(bool);
+		});
+	}
+
 	sendMessage(message: ChatMessage): Promise<any> {
 		return this.socketService.emit('message', message.toJSON());
 	}
@@ -134,6 +153,14 @@ export class StateService {
 		if (isDevMode()) return this._currentUserSubscribers;
 		else {
 			console.log(new Error('ERROR StateService._getCurrentUserSubscribers() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getLoggedInStatusSubscribers(): Array<Observer<boolean>> {
+		if (isDevMode()) return this._loggedInStatusSubscribers;
+		else {
+			console.log(new Error('ERROR StateService._getLoggedInStatusSubscribers() is only availabe in dev mode.'));
 			return undefined;
 		}
 	}
