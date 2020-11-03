@@ -1,4 +1,4 @@
 <div id="app-container">
-    <app-login *ngIf="!isLoggedIn()" [state]="getState()"></app-login>
-    <app-chat-log *ngIf="isLoggedIn()" [state]="getState()"></app-chat-log>
+    <app-login *ngIf="!isLoggedIn()" [state]="getStateService()"></app-login>
+    <app-chat-log *ngIf="isLoggedIn()" [state]="getStateService()"></app-chat-log>
 </div>

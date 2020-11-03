@@ -1,0 +1,31 @@
+#login-container {
+    width: 300px;
+    height: 400px;
+    margin: 30px auto;
+    h1 {
+        text-align: center;
+    }
+    
+    .form-row {
+        display: flex;
+        justify-content: space-around;
+        padding: 14px 0px;
+        label {
+            display: inline-block;
+            width: 14%;
+        }
+        input {
+            display: inline-block;
+        }
+        button {
+            width: 90px;
+            padding: 6px 0px;
+        }
+        
+    }
+}
+
+.failure {
+    color: #f00;
+    text-align: center;
+}

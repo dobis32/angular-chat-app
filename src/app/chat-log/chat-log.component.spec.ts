@@ -34,11 +34,10 @@ describe('ChatLogComponent', () => {
 		}).compileComponents();
 	});
 
-	beforeEach(async () => {
+	beforeEach(() => {
 		hostFixture = TestBed.createComponent(TestHostComponent);
 		hostComponent = hostFixture.componentInstance;
 		hostFixture.detectChanges();
-		await hostFixture.whenStable();
 		chatLogDebugElement = hostFixture.debugElement.query(By.directive(ChatLogComponent));
 		chatLogComponent = chatLogDebugElement.componentInstance;
 	});

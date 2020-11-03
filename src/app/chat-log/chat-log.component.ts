@@ -32,7 +32,6 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 			this.chatMessages = chatLog;
 		});
 		this.localSubscriptions.push(chatSub);
-
 		let usernameSub = this.state.currentUser().subscribe((username) => {
 			this.userName = username;
 		});

@@ -159,4 +159,32 @@ describe('StateService', () => {
 		expect(emitSpy).toHaveBeenCalled();
 		expect(emitSpy).toHaveBeenCalledWith('message', message.toJSON());
 	});
+	
+	it('should have a')
+
+	it('should have a function to log-in a user, which should update current-user subscribers and logged-in status subscribers', () => {
+		let updateCurrentUserSubSpy = spyOn(service, 'updateCurrentUserSubscribers')
+		let updateLoggedInSubSpy = spyOn(service, 'updateLoggedInSubscribers');
+		let result = service.login('denny', 'password');
+
+		expect(typeof service.login).toEqual('function');
+		expect(result).toBeTrue();
+		expect(updateCurrentUserSubSpy).toHaveBeenCalled();
+		expect(updateLoggedInSubSpy).toHaveBeenCalled();
+	});
+
+	it('should have a function to log-out the current user', () => {
+		let updateCurrentUserSubSpy = spyOn(service, 'updateCurrentUserSubscribers')
+		let updateLoggedInSubSpy = spyOn(service, 'updateLoggedInSubscribers');
+		let result = service.login('denny', 'password');
+
+		service.logout();
+
+		expect(typeof service.logout).toEqual('function');
+		expect(result).toBeTrue();
+		expect(updateCurrentUserSubSpy).toHaveBeenCalled();
+		expect(updateLoggedInSubSpy).toHaveBeenCalled();
+	});
+
+
 });

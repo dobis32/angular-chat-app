@@ -91,9 +91,8 @@ export class StateService {
 
 	logout() {
 		this._currentUser = '';
-		this._loggedInStatusSubscribers.forEach((obs: Observer<any>) => {
-			obs.next(false);
-		});
+		this.updateCurrentUserSubscribers();
+		this.updateLoggedInSubscribers();
 	}
 
 	loggedInStatus(): Observable<boolean> {
@@ -107,6 +106,29 @@ export class StateService {
 
 	sendMessage(message: ChatMessage): Promise<any> {
 		return this.socketService.emit('message', message.toJSON());
+	}
+
+	updateCurrentUserSubscribers(): void {
+		this._currentUserSubscribers.forEach((sub) => {
+			sub.next(this._currentUser);
+		});
+	}
+
+	updateLoggedInSubscribers(): void {
+		this._loggedInStatusSubscribers.forEach((sub) => {
+			sub.next(this._currentUser.length ? true : false);
+		});
+	}
+
+	login(username: string, password: string): boolean {
+		try {
+			this._currentUser = username;
+			this.updateCurrentUserSubscribers();
+			this.updateLoggedInSubscribers();
+			return true;
+		} catch(error) {
+			return false;
+		}
 	}
 
 	_getSocketService(): Socket {
