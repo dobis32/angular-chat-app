@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, isDevMode } from '@angular/core';
 import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
 import { StateService } from '../services/state.service';
 
@@ -19,16 +19,24 @@ export class LoginComponent implements OnInit {
 		});
 	}
 
+	_getFormBuilder(): FormBuilder {
+		if (isDevMode()) return this.formBuilder;
+		else {
+			console.log('ERROR _getFormBuilder is only available in dev mode');
+			return undefined;
+		}
+	}
+
 	ngOnInit(): void {}
 
 	login(fg: FormGroup) {
-		let { username, password } = fg.value
+		let { username, password } = fg.value;
 		this.loginFailed = false;
 		console.log(username, password);
-		if(fg.valid) {
+		if (fg.valid) {
 			let result = this.state.login(username, password);
-			if(result) this.loginFailed = false;
+			if (result) this.loginFailed = false;
 			else this.loginFailed = true;
-		}
+		} else this.loginFailed = true;
 	}
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, isDevMode } from '@angular/core';
 import { StateService } from './services/state.service';
 import { Subscription } from 'rxjs';
 @Component({
@@ -13,7 +13,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
 	ngOnInit(): void {
 		this.loggedInSub = this.state.loggedInStatus().subscribe((status) => {
-			this.loggedInBool = status;
+			// this.loggedInBool = status;
+			this.loggedInBool = true;
 		});
 	}
 
@@ -28,5 +29,29 @@ export class AppComponent implements OnInit, OnDestroy {
 
 	isLoggedIn(): boolean {
 		return this.loggedInBool;
+	}
+
+	_getLoggedInBool(): boolean {
+		if (isDevMode()) return this.loggedInBool;
+		else {
+			console.log(new Error('ERROR _getLoggedInBool() is only available in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getStateService(): StateService {
+		if (isDevMode()) return this.state;
+		else {
+			console.log(new Error('ERROR _getStateService() is only available in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getLoggedInSubscription(): Subscription {
+		if (isDevMode()) return this.loggedInSub;
+		else {
+			console.log(new Error('ERROR _getLoggedInSubscription() is only available in dev mode.'));
+			return undefined;
+		}
 	}
 }

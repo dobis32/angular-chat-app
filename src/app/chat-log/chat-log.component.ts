@@ -1,6 +1,6 @@
-import { Component, OnInit, Input, OnDestroy } from '@angular/core';
+import { Component, OnInit, Input, OnDestroy, isDevMode } from '@angular/core';
 import { FormGroup, FormBuilder, FormControl, Validators } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subscription, Subscriber } from 'rxjs';
 import { ChatMessage } from '../util/chatMessage';
 import { StateService } from '../services/state.service';
 
@@ -11,11 +11,11 @@ import { StateService } from '../services/state.service';
 })
 export class ChatLogComponent implements OnInit, OnDestroy {
 	@Input() state: StateService;
-	chatMessages: Array<ChatMessage>;
-	chatForm: FormGroup;
+	private chatMessages: Array<ChatMessage>;
+	private chatForm: FormGroup;
 	chatError: boolean;
-	userName: string;
-	localSubscriptions: Array<Subscription>;
+	private userName: string; // TO DO create and implement User class
+	private localSubscriptions: Array<Subscription>;
 
 	constructor(private formBuilder: FormBuilder) {
 		this.chatError = false;
@@ -33,31 +33,74 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 		});
 		this.localSubscriptions.push(chatSub);
 		let usernameSub = this.state.currentUser().subscribe((username) => {
-			this.userName = username;
+			this.userName = username; // Gotta change this when I implement User class
 		});
 		this.localSubscriptions.push(usernameSub);
 	}
 
 	ngOnDestroy() {
-		this.localSubscriptions.forEach((sub: Subscription) => {
-			sub.unsubscribe();
-		});
+		this.unsubLocalSubscriptions();
 	}
 
-	sendMessage(fg: FormGroup) {
-		let message = new ChatMessage(this.userName, new Date(), fg.value.message);
-		this.state
-			.sendMessage(message)
-			.then(() => {
+	// Functions for the DOM
+	getChatMessages(): Array<ChatMessage> {
+		return this.chatMessages;
+	}
+
+	getChatForm(): FormGroup {
+		return this.chatForm;
+	}
+
+	getCurrentUser(): any {
+		// this will return a user class later
+		return this.userName;
+	}
+
+	async sendChatMessage(fg: FormGroup) {
+		try {
+			if (!fg.valid) throw new Error('ERROR message was invalid!');
+			let message = new ChatMessage(this.userName, new Date(), fg.value.message);
+			let result = await this.state.sendMessage(message);
+			if (result) {
 				this.chatError = false;
-			})
-			.catch((error) => {
-				console.log(error);
-				this.chatError = true;
-			});
+				fg.reset();
+			} else {
+				throw new Error();
+			}
+		} catch (error) {
+			console.log(error);
+			this.chatError = true;
+		}
 	}
 
 	messageFromUser() {
 		return false;
+	}
+
+	unsubLocalSubscriptions(): void {
+		while (this.localSubscriptions.length) {
+			this.localSubscriptions.shift().unsubscribe();
+		}
+	}
+
+	_getFormBuilder(): FormBuilder {
+		if (isDevMode()) return this.formBuilder;
+		else {
+			console.log(new Error('ERROR _getFormBuilder() is only available in dev mode'));
+			return undefined;
+		}
+	}
+
+	_getLocalSubscriberArray(): Array<Subscription> {
+		if (isDevMode()) return this.localSubscriptions;
+		else {
+			console.log(new Error('ERROR _getLocalSubscriberArray() is only available in dev mode'));
+			return undefined;
+		}
+	}
+
+	_setLocalSubscriberArray(localSubs: Array<Subscription>) {
+		if (isDevMode()) this.localSubscriptions = localSubs;
+		else console.log(new Error('ERROR _getLocalSubscriberArray() is only available in dev mode'));
 	}
 }

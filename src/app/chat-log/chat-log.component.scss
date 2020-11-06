@@ -1,4 +1,8 @@
-#message-log {
+#chat-log-container {
+	display: inline-block;
+}
+
+#chat-container {
 	border: 3px solid #000;
 	width: 800px;
 	height: 600px;

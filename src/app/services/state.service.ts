@@ -13,7 +13,8 @@ export class StateService {
 	private _currentUserSubscribers: Array<Observer<string>>;
 	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
 	private _chatLog: Array<ChatMessage>;
-	private _currentUser: string;
+	private _currentUser: string; // TO DO create and implement User class
+	private _roomsList: Array<any>;
 
 	constructor(private socketService: SocketService) {
 		// Init values
@@ -38,10 +39,12 @@ export class StateService {
 		});
 	}
 
+	// Socket
 	resetSocketSubs(): void {
 		this.unsubscribeAllSocketSubs();
-		let initSub = this.socketService.listen('init').subscribe(({ messages }) => {
+		let initSub = this.socketService.listen('init').subscribe(({ messages, rooms }) => {
 			let parsedMessages = this.parseChatLog(messages);
+			this._roomsList = rooms;
 			this._setChatLog(parsedMessages);
 		});
 		this._socketSubscriptions.push(initSub);
@@ -65,13 +68,31 @@ export class StateService {
 		}
 	}
 
+	_getSocketService(): Socket {
+		if (isDevMode()) return this.socketService;
+		else {
+			console.log(new Error('ERROR StateService._getSocketService() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getSocketSubscriptions(): Array<Subscription> {
+		if (isDevMode()) return this._socketSubscriptions;
+		else {
+			console.log(new Error('ERROR StateService._getSocketSubscriptions() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	// Chat log
 	parseChatLog(messages: Array<any>): Array<ChatMessage> {
 		let parsedMessages: Array<ChatMessage> = new Array();
-		messages.forEach((notParsed) => {
-			let { user, dateString, text } = notParsed;
-			let date = new Date(dateString);
-			parsedMessages.push(new ChatMessage(user, date, text));
-		});
+		if (Array.isArray(messages))
+			messages.forEach((notParsed) => {
+				let { user, dateString, text } = notParsed;
+				let date = new Date(dateString);
+				parsedMessages.push(new ChatMessage(user, date, text));
+			});
 		return parsedMessages;
 	}
 
@@ -82,6 +103,34 @@ export class StateService {
 		});
 	}
 
+	_getChatLog(): Array<ChatMessage> {
+		if (isDevMode()) return this._chatLog;
+		else {
+			console.log(new Error('ERROR StateService._getChatLog() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getChatLogSubscribers(): Array<Observer<Array<ChatMessage>>> {
+		if (isDevMode()) return this._chatLogSubscribers;
+		else {
+			console.log(new Error('ERROR StateService._getChatLogSubscribers() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	// Messages
+	async sendMessage(message: ChatMessage): Promise<boolean> {
+		try {
+			await this.socketService.emit('message', message.toJSON());
+			return true;
+		} catch (error) {
+			console.log('ERROR SENDING MESSAGE -- ', error.message);
+			return false;
+		}
+	}
+
+	// User
 	currentUser() {
 		return new Observable((subscriber: Observer<any>) => {
 			this._currentUserSubscribers.push(subscriber);
@@ -104,10 +153,6 @@ export class StateService {
 		});
 	}
 
-	sendMessage(message: ChatMessage): Promise<any> {
-		return this.socketService.emit('message', message.toJSON());
-	}
-
 	updateCurrentUserSubscribers(): void {
 		this._currentUserSubscribers.forEach((sub) => {
 			sub.next(this._currentUser);
@@ -126,24 +171,8 @@ export class StateService {
 			this.updateCurrentUserSubscribers();
 			this.updateLoggedInSubscribers();
 			return true;
-		} catch(error) {
+		} catch (error) {
 			return false;
-		}
-	}
-
-	_getSocketService(): Socket {
-		if (isDevMode()) return this.socketService;
-		else {
-			console.log(new Error('ERROR StateService._getSocketService() is only availabe in dev mode.'));
-			return undefined;
-		}
-	}
-
-	_getChatLog(): Array<ChatMessage> {
-		if (isDevMode()) return this._chatLog;
-		else {
-			console.log(new Error('ERROR StateService._getChatLog() is only availabe in dev mode.'));
-			return undefined;
 		}
 	}
 
@@ -151,22 +180,6 @@ export class StateService {
 		if (isDevMode()) return this._currentUser;
 		else {
 			console.log(new Error('ERROR StateService._getCurrentUser() is only availabe in dev mode.'));
-			return undefined;
-		}
-	}
-
-	_getSocketSubscriptions(): Array<Subscription> {
-		if (isDevMode()) return this._socketSubscriptions;
-		else {
-			console.log(new Error('ERROR StateService._getSocketSubscriptions() is only availabe in dev mode.'));
-			return undefined;
-		}
-	}
-
-	_getChatLogSubscribers(): Array<Observer<Array<ChatMessage>>> {
-		if (isDevMode()) return this._chatLogSubscribers;
-		else {
-			console.log(new Error('ERROR StateService._getChatLogSubscribers() is only availabe in dev mode.'));
 			return undefined;
 		}
 	}

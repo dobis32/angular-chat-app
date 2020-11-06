@@ -30,7 +30,7 @@ export class SocketService implements Socket {
 				subscriber.next(data);
 			});
 		});
-		return obs.pipe(first());
+		return obs;
 	}
 
 	emit(eventName: string, data: any) {

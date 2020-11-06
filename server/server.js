@@ -27,6 +27,14 @@ let mockChatHistory = [
 	}
 ];
 
+let mockRoomsList = [
+	{
+		name: 'room 1',
+		private: true,
+		users: [ { username: 'Denny Dingus' }, { username: 'Hugh Jass' } ]
+	}
+];
+
 // Run when client connects
 io.on('connection', (socket) => {
 	console.log('new user connected');
@@ -46,7 +54,8 @@ io.on('connection', (socket) => {
 
 	socket.emit('init', {
 		msg: 'hello from the server',
-		messages: mockChatHistory
+		// messages: mockChatHistory,
+		rooms: mockRoomsList
 	});
 });
 

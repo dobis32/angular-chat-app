@@ -21,34 +21,13 @@ describe('StateService', () => {
 		expect(service).toBeTruthy();
 	});
 
+	// Socket
 	it('shouuld have the SocketService injected into it', () => {
 		expect(service._getSocketService()).toBeTruthy();
 	});
 
 	it('should have an array for socket subscriptions', () => {
 		expect(Array.isArray(service._getSocketSubscriptions()));
-	});
-
-	it('should have an array for chat log subscribers/observers', () => {
-		expect(Array.isArray(service._getChatLogSubscribers()));
-	});
-
-	it('should have an array for current user subscribers/observers', () => {
-		expect(Array.isArray(service._getCurrentUserSubscribers()));
-	});
-
-	it('should have an array for current user subscribers/observers', () => {
-		expect(Array.isArray(service._getLoggedInStatusSubscribers()));
-	});
-
-	it('should have a chat log', () => {
-		expect(Array.isArray(service._getChatLog()));
-	});
-
-	it('should have a function');
-
-	it('should have the data for the current user', () => {
-		expect(typeof service._getCurrentUser()).toEqual('string');
 	});
 
 	it('should listen to the "init" event from the SocketService', () => {
@@ -73,24 +52,6 @@ describe('StateService', () => {
 		service.resetSocketSubs();
 
 		expect(listenSpy).toHaveBeenCalledWith('messageReceived');
-	});
-
-	it('should add ChatMessages received from the "incomingMessage" socket event to the ChatLog', () => {
-		let initMessageCount = service._getChatLog().length;
-		let socket: Socket = service._getSocketService();
-
-		socket.trigger('incomingMessage', new ChatMessage('Test', new Date(), 'Hello there'));
-
-		expect(service._getChatLog().length).toBeGreaterThan(initMessageCount);
-	});
-
-	it('should add ChatMessages received from the "messageReceived" socket event to the ChatLog', () => {
-		let initMessageCount = service._getChatLog().length;
-		let socket: Socket = service._getSocketService();
-
-		socket.trigger('messageReceived', new ChatMessage('Test', new Date(), 'Hello there'));
-
-		expect(service._getChatLog().length).toBeGreaterThan(initMessageCount);
 	});
 
 	it('should have a function to unsubscribe from all socket subscriptions', () => {
@@ -119,6 +80,40 @@ describe('StateService', () => {
 		expect(unsubSpy).toHaveBeenCalled();
 	});
 
+	it('should add ChatMessages received from the "incomingMessage" socket event to the ChatLog', () => {
+		let initMessageCount = service._getChatLog().length;
+		let socket: Socket = service._getSocketService();
+
+		socket.trigger('incomingMessage', new ChatMessage('Test', new Date(), 'Hello there'));
+
+		expect(service._getChatLog().length).toBeGreaterThan(initMessageCount);
+	});
+
+	it('should add ChatMessages received from the "messageReceived" socket event to the ChatLog', () => {
+		let initMessageCount = service._getChatLog().length;
+		let socket: Socket = service._getSocketService();
+
+		socket.trigger('messageReceived', new ChatMessage('Test', new Date(), 'Hello there'));
+
+		expect(service._getChatLog().length).toBeGreaterThan(initMessageCount);
+	});
+
+	//Chat log
+	it('should have a chat log', () => {
+		expect(Array.isArray(service._getChatLog()));
+	});
+
+	it('should have an array for chat log subscribers/observers', () => {
+		expect(Array.isArray(service._getChatLogSubscribers()));
+	});
+
+	it('should have a public method/function for exposing an Observable of the ChatLog', () => {
+		let obs = service.chatLog();
+
+		expect(typeof service.chatLog).toEqual('function');
+		expect(typeof obs.subscribe).toEqual('function');
+	});
+
 	it('should have a function to parse an array of ChatMessage data', () => {
 		let parsedMessages: Array<ChatMessage>;
 		let d = new Date();
@@ -134,22 +129,11 @@ describe('StateService', () => {
 		expect(parsedMessages.length).toEqual(chatMessageData.length);
 	});
 
-	it('should have a public method/function for exposing an Observable of the ChatLog', () => {
-		let obs = service.chatLog();
-
-		expect(typeof service.chatLog).toEqual('function');
-		expect(typeof obs.subscribe).toEqual('function');
-	});
-
-	it('should have a public method/function for exposing an Observable of the CurrentUser', () => {
-		let obs = service.currentUser();
-
-		expect(typeof service.currentUser).toEqual('function');
-		expect(typeof obs.subscribe).toEqual('function');
-	});
-
+	// Chat Message
 	it('should have a public method/function for emitting ChatMessage data to the SocketService', async () => {
-		let emitSpy = spyOn(service._getSocketService(), 'emit').and.callThrough();
+		let emitSpy = spyOn(service._getSocketService(), 'emit').and.callFake((event: string, data: any) => {
+			return Promise.resolve();
+		});
 		let d = new Date();
 		let message = new ChatMessage('foo', d, 'some text');
 
@@ -159,11 +143,29 @@ describe('StateService', () => {
 		expect(emitSpy).toHaveBeenCalled();
 		expect(emitSpy).toHaveBeenCalledWith('message', message.toJSON());
 	});
-	
-	it('should have a')
+
+	// User
+	it('should have an array for current user subscribers/observers', () => {
+		expect(Array.isArray(service._getCurrentUserSubscribers()));
+	});
+
+	it('should have an array for logged-in status subscribers/observers', () => {
+		expect(Array.isArray(service._getLoggedInStatusSubscribers()));
+	});
+
+	it('should have the data for the current user', () => {
+		expect(typeof service._getCurrentUser()).toEqual('string');
+	});
+
+	it('should have a public method/function for exposing an Observable of the CurrentUser', () => {
+		let obs = service.currentUser();
+
+		expect(typeof service.currentUser).toEqual('function');
+		expect(typeof obs.subscribe).toEqual('function');
+	});
 
 	it('should have a function to log-in a user, which should update current-user subscribers and logged-in status subscribers', () => {
-		let updateCurrentUserSubSpy = spyOn(service, 'updateCurrentUserSubscribers')
+		let updateCurrentUserSubSpy = spyOn(service, 'updateCurrentUserSubscribers');
 		let updateLoggedInSubSpy = spyOn(service, 'updateLoggedInSubscribers');
 		let result = service.login('denny', 'password');
 
@@ -174,7 +176,7 @@ describe('StateService', () => {
 	});
 
 	it('should have a function to log-out the current user', () => {
-		let updateCurrentUserSubSpy = spyOn(service, 'updateCurrentUserSubscribers')
+		let updateCurrentUserSubSpy = spyOn(service, 'updateCurrentUserSubscribers');
 		let updateLoggedInSubSpy = spyOn(service, 'updateLoggedInSubscribers');
 		let result = service.login('denny', 'password');
 
@@ -184,7 +186,6 @@ describe('StateService', () => {
 		expect(result).toBeTrue();
 		expect(updateCurrentUserSubSpy).toHaveBeenCalled();
 		expect(updateLoggedInSubSpy).toHaveBeenCalled();
+		expect(service._getCurrentUser()).toBeFalsy();
 	});
-
-
 });
