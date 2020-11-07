@@ -2,13 +2,13 @@ const path = require('path');
 const http = require('http');
 const express = require('express');
 const socketio = require('socket.io');
-
-let Mockmessages;
-
+const crypto = require('crypto');
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
-
+const getNonce = function() {
+	return crypto.randomBytes(16).toString('base64')
+}
 // Set static folder
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -31,14 +31,16 @@ let mockRoomsList = [
 	{
 		name: 'room 1',
 		private: true,
-		users: [ { username: 'Denny Dingus' }, { username: 'Hugh Jass' } ]
+		users: [ { username: 'Denny Dingus', nonce: getNonce() }, { username: 'Hugh Jass', nonce: getNonce() } ]
 	}
 ];
 
 // Run when client connects
 io.on('connection', (socket) => {
 	console.log('new user connected');
-	socket.on('joinRoom', ({ username, room }) => {});
+	socket.on('joinRoom', ({ username, room }) => {
+		socket.join(room);
+	});
 
 	// Listen for message
 	socket.on('message', (message) => {

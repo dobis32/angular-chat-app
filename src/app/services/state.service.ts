@@ -1,6 +1,6 @@
 import { Injectable, isDevMode } from '@angular/core';
 import { SocketService } from './socket.service';
-import { Observer, Observable, Subscription } from 'rxjs';
+import { Observer, Observable, Subscription, Subscriber } from 'rxjs';
 import { ChatMessage } from '../util/chatMessage';
 import { Socket } from '../util/socket.interface';
 
@@ -15,6 +15,7 @@ export class StateService {
 	private _chatLog: Array<ChatMessage>;
 	private _currentUser: string; // TO DO create and implement User class
 	private _roomsList: Array<any>;
+	private _roomsListSubscribers: Array<Observer<Array<any>>>;
 
 	constructor(private socketService: SocketService) {
 		// Init values
@@ -24,6 +25,8 @@ export class StateService {
 		this._chatLogSubscribers = new Array();
 		this._currentUserSubscribers = new Array();
 		this._loggedInStatusSubscribers = new Array();
+		this._roomsList = new Array();
+		this._roomsListSubscribers = new Array();
 
 		// Init subs
 		this.resetSocketSubs();
@@ -81,6 +84,32 @@ export class StateService {
 		else {
 			console.log(new Error('ERROR StateService._getSocketSubscriptions() is only availabe in dev mode.'));
 			return undefined;
+		}
+	}
+
+	// Rooms
+	roomsList(): Observable<Array<any>> {
+		return new Observable((sub: Subscriber<Array<any>>) => {
+			sub.next(this._roomsList);
+			this._roomsListSubscribers.push(sub);
+		});
+	}
+
+	updateRoomsList(rooms: Array<any>): void {
+		this._roomsList = rooms;
+		this._roomsListSubscribers.forEach((sub:Subscriber<Array<any>>) => {
+			sub.next(rooms);
+		})
+	}
+
+	async createRoom(roomName: string): Promise<boolean> {
+		try {
+			await this.socketService.emit('createRoom', roomName);
+			return true;
+		}
+		catch(error) {
+			console.log(error);
+			return false;
 		}
 	}
 
