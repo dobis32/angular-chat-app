@@ -9,12 +9,28 @@ export class ChatRoom {
 
     constructor(name: string, capacity: number, users?: Array<User>, password?: string) {
         this._name = name;
-        this._users = users;
+        this._capacity = capacity;
         this._users = users ? users : new Array();
         this._password = password ? password : '';        
     }
 
     isPrivate(): boolean {
         return this._password.length ? true : false;
+    }
+
+    getName(): string {
+        return this._name;
+    }
+
+    getUsers(): Array<User> {
+        return this._users;
+    }
+
+    getCapacity(): number {
+        return this._capacity;
+    }
+
+    getPassword(): string {
+        return this._password;
     }
 }

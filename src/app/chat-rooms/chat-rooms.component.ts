@@ -1,7 +1,7 @@
 import { Component, OnInit, Input, isDevMode, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { StateService } from '../services/state.service';
-
+import { ChatRoom } from '../util/chatRoom';
 @Component({
   selector: 'app-chat-rooms',
   templateUrl: './chat-rooms.component.html',
@@ -32,6 +32,20 @@ export class ChatRoomsComponent implements OnInit, OnDestroy{
 
   getRoomsList(): Array<any> {
     return this._roomsList;
+  }
+
+  async joinRoom(room: ChatRoom) {
+    try {
+      if(room.getCapacity() == room.getUsers().length) throw new Error()
+      if(room.getPassword().length) {
+        alert('implement modal to enter password');
+      }
+      let result = await this.state.joinRoom(room.getName());
+      if(!result) throw new Error()
+    } catch(error) {
+      console.log(error);
+      alert('Failed to join room. Room is either at capacity or something else went wrong on the server-side.')
+    }
   }
 
   _getRoomsList(): Array<any> {

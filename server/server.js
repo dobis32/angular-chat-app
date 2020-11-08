@@ -13,15 +13,16 @@ const getNonce = function() {
 app.use(express.static(path.join(__dirname, 'public')));
 
 const botName = 'ChatCord Bot';
-
+let user1 = { name: 'Denny Dingus', id: getNonce() }
+let user2 = { name: 'Hugh Jass', id: getNonce() }
 let mockChatHistory = [
 	{
-		user: 'Denny Dingus',
+		user: user1.name,
 		dateString: new Date().toDateString(),
 		text: 'Hi there'
 	},
 	{
-		user: 'Hugh Jass',
+		user: user2.name,
 		dateString: new Date().toDateString(),
 		text: 'Hello, Denny'
 	}
@@ -30,8 +31,15 @@ let mockChatHistory = [
 let mockRoomsList = [
 	{
 		name: 'room 1',
-		private: true,
-		users: [ { username: 'Denny Dingus', nonce: getNonce() }, { username: 'Hugh Jass', nonce: getNonce() } ]
+		capacity: 6,
+		password: 'pw',
+		users: [ user1, user2 ]
+	}, 
+	{
+		name: 'room 2',
+		capacity: 4,
+		password: '',
+		users: []
 	}
 ];
 

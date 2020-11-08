@@ -68,4 +68,52 @@ describe('ChatRoomsComponent', () => {
     expect(chatRoomsComponent._getRoomslistSubscription()).toBeTruthy();
   })
 
+  it('should unsubscribe from the rooms list of the state service on destory', () => {
+    let unsubSpy = spyOn(chatRoomsComponent._getRoomslistSubscription(), 'unsubscribe').and.callThrough();
+    
+    chatRoomsComponent.ngOnDestroy();
+
+    expect(unsubSpy).toHaveBeenCalled();
+    expect(chatRoomsComponent._getRoomslistSubscription()).toBeUndefined();
+  });
+
+  it('should have a function for joining chat rooms', () => {
+    expect(typeof chatRoomsComponent.joinRoom).toEqual('function');
+  });
+
+  it('should have a function to join a room that checks the capacity of the room before emitting through the SocketService', () => {
+    let roomName = 'testRoom';
+    let room = new ChatRoom(roomName, 6);
+    let capacitySpy = spyOn(room, 'getCapacity').and.callThrough();
+    let usersSpy = spyOn(room, 'getUsers').and.callThrough();
+
+    chatRoomsComponent.joinRoom(room);
+    
+    expect(capacitySpy).toHaveBeenCalled();
+    expect(usersSpy).toHaveBeenCalled();
+  });
+
+  it('should have a function to join a room that prompts for a password before emitting through the SocketService', () => {
+    let roomName = 'testRoom';
+    let room = new ChatRoom(roomName, 6);
+    let passwordSpy = spyOn(room, 'getPassword').and.callThrough();
+
+    chatRoomsComponent.joinRoom(room);
+    
+    expect(passwordSpy).toHaveBeenCalled();
+  });
+
+
+  it('should have a function that calls the "joinRoom" function of the StateService', () => {
+    let joinSpy = spyOn(chatRoomsComponent.state, 'joinRoom').and.callFake((roomName: string) => {
+      return Promise.resolve(true);
+    });
+    let room = new ChatRoom('test', 6);
+
+    chatRoomsComponent.joinRoom(room);
+
+    expect(typeof chatRoomsComponent.joinRoom).toEqual('function');
+    expect(joinSpy).toHaveBeenCalled();
+  });
+
 });

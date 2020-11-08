@@ -3,6 +3,7 @@ import { SocketService } from './socket.service';
 import { Observer, Observable, Subscription, Subscriber } from 'rxjs';
 import { ChatMessage } from '../util/chatMessage';
 import { Socket } from '../util/socket.interface';
+import { ChatRoom } from '../util/chatRoom';
 
 @Injectable({
 	providedIn: 'root'
@@ -47,7 +48,8 @@ export class StateService {
 		this.unsubscribeAllSocketSubs();
 		let initSub = this.socketService.listen('init').subscribe(({ messages, rooms }) => {
 			let parsedMessages = this.parseChatLog(messages);
-			this._roomsList = rooms;
+			let parsedRoomsList = this.parseRoomsList(rooms);
+			this.updateRoomsList(parsedRoomsList);
 			this._setChatLog(parsedMessages);
 		});
 		this._socketSubscriptions.push(initSub);
@@ -110,6 +112,46 @@ export class StateService {
 		catch(error) {
 			console.log(error);
 			return false;
+		}
+	}
+
+	async joinRoom(roomName: string): Promise<boolean> {
+		try {
+			await this.socketService.emit('joinRoom', { room: roomName });
+			return true;
+		} catch(error) {
+			console.log(error);
+			return false;
+		}
+	}
+
+	parseRoomsList(unparsedList: Array<any>): Array<ChatRoom> {
+		let parsedList = new Array();
+
+		unparsedList.forEach( ({ name, capacity, password, users }) => {
+			try {
+				parsedList.push(new ChatRoom(name, capacity, password, users))
+			} catch(error) {
+				console.log(error);
+			}
+		})
+
+		return parsedList;
+	}
+
+	_getRoomsList(): Array<ChatRoom> {
+		if(isDevMode()) return this._roomsList;
+		else {
+			console.log('Sorry _getRoomsList() is only available in dev mode');
+			return undefined;
+		}
+	}
+
+	_getRoomsListSubscribers(): Array<Observer<Array<ChatRoom>>> {
+		if(isDevMode()) return this._roomsListSubscribers;
+		else {
+			console.log('Sorry _getRoomsListSubscribers() is only available in dev mode');
+			return undefined;
 		}
 	}
 

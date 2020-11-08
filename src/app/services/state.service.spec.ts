@@ -6,6 +6,8 @@ import { SocketService } from './socket.service';
 import { Socket } from '../util/socket.interface';
 import { ChatMessage } from '../util/chatMessage';
 import { Subscription } from 'rxjs';
+import { ChatRoom } from '../util/chatRoom';
+import { ChatRoomsComponent } from '../chat-rooms/chat-rooms.component';
 
 describe('StateService', () => {
 	let service: StateService;
@@ -96,6 +98,58 @@ describe('StateService', () => {
 		socket.trigger('messageReceived', new ChatMessage('Test', new Date(), 'Hello there'));
 
 		expect(service._getChatLog().length).toBeGreaterThan(initMessageCount);
+	});
+
+	// Rooms List
+	it('should have an array for holding data about available chat rooms', () => {
+		expect(Array.isArray(service._getRoomsList())).toBeTrue();
+	});
+
+	it('should have a public method/function for exposing an Observalbe of the chat rooms array', () => {
+		let obs = service.roomsList();
+
+		expect(typeof service.chatLog).toEqual('function');
+		expect(typeof obs.subscribe).toEqual('function'); 
+	});
+
+	it('should have an array for chat room array subscribers', () => {
+		expect(Array.isArray(service._getRoomsListSubscribers())).toBeTrue();
+	})
+
+	it('should have a funciton for updating the chat rooms array and calls the "next" function of all corresponding observers', () => {
+		service.roomsList().subscribe();
+		service.roomsList().subscribe();
+
+		let spy1 = spyOn(service._getRoomsListSubscribers()[0], 'next').and.callThrough();
+		let spy2 = spyOn(service._getRoomsListSubscribers()[1], 'next').and.callThrough();
+		let newRoom = [new ChatRoom('Room A', 2)];
+		
+		service.updateRoomsList(newRoom);
+
+		expect(spy1).toHaveBeenCalledWith(newRoom);
+		expect(spy2).toHaveBeenCalledWith(newRoom);
+	});
+
+	it('should have a function for creating a new room', async () => {
+		let emitSpy = spyOn(service._getSocketService(), 'emit').and.callFake((eventName: string, roomName: string) => {
+			return Promise.resolve();
+		});
+		let newRoom = 'test';
+
+		await service.createRoom(newRoom);
+
+		expect(emitSpy).toHaveBeenCalledWith('createRoom', newRoom);
+	});
+
+	it('should have a function for joining a new room that should emit the "joinRoom" event from the SocketService', async () => {
+		let roomToJoin = 'test'
+		let socketSpy = spyOn(service._getSocketService(), 'emit').and.callFake((eventName: string, roomname: string) => {
+			return Promise.resolve(true);
+		});
+
+		await service.joinRoom(roomToJoin);
+		
+		expect(socketSpy).toHaveBeenCalledWith('joinRoom', { room: roomToJoin });
 	});
 
 	//Chat log
