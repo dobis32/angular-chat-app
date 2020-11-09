@@ -56,7 +56,7 @@ describe('ChatRoomsComponent', () => {
   it('should subscribe to the rooms list of the state service on init', () => {
     let roomsListSubSpy = spyOn(chatRoomsComponent.state, 'roomsList').and.callFake(() => {
       return new Observable((sub: Subscriber<Array<any>>) => {
-        sub.next([new ChatRoom('roomA', 6), new ChatRoom('roomB', 6)]);
+        sub.next([new ChatRoom('id1', 'roomA', 6), new ChatRoom('id2', 'roomB', 6)]);
       })
     })
     let sub = chatRoomsComponent._getRoomslistSubscription()
@@ -83,7 +83,7 @@ describe('ChatRoomsComponent', () => {
 
   it('should have a function to join a room that checks the capacity of the room before emitting through the SocketService', () => {
     let roomName = 'testRoom';
-    let room = new ChatRoom(roomName, 6);
+    let room = new ChatRoom('id1', roomName, 6);
     let capacitySpy = spyOn(room, 'getCapacity').and.callThrough();
     let usersSpy = spyOn(room, 'getUsers').and.callThrough();
 
@@ -95,7 +95,7 @@ describe('ChatRoomsComponent', () => {
 
   it('should have a function to join a room that prompts for a password before emitting through the SocketService', () => {
     let roomName = 'testRoom';
-    let room = new ChatRoom(roomName, 6);
+    let room = new ChatRoom('id1', roomName, 6);
     let passwordSpy = spyOn(room, 'getPassword').and.callThrough();
 
     chatRoomsComponent.joinRoom(room);
@@ -108,7 +108,7 @@ describe('ChatRoomsComponent', () => {
     let joinSpy = spyOn(chatRoomsComponent.state, 'joinRoom').and.callFake((roomName: string) => {
       return Promise.resolve(true);
     });
-    let room = new ChatRoom('test', 6);
+    let room = new ChatRoom('id1', 'test', 6);
 
     chatRoomsComponent.joinRoom(room);
 

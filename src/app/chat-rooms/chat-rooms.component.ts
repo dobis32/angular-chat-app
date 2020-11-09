@@ -40,7 +40,7 @@ export class ChatRoomsComponent implements OnInit, OnDestroy{
       if(room.getPassword().length) {
         alert('implement modal to enter password');
       }
-      let result = await this.state.joinRoom(room.getName());
+      let result = await this.state.joinRoom(room.getID());
       if(!result) throw new Error()
     } catch(error) {
       console.log(error);

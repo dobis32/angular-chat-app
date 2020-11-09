@@ -12,6 +12,11 @@
 	border: 3px solid #000;
 	width: 800px;
 	height: 100px;
+
+	textarea {
+		width: 100%;
+		height: 80px;
+	}
 }
 
 #chat-error-message {

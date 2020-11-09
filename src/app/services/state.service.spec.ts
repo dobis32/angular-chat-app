@@ -122,7 +122,7 @@ describe('StateService', () => {
 
 		let spy1 = spyOn(service._getRoomsListSubscribers()[0], 'next').and.callThrough();
 		let spy2 = spyOn(service._getRoomsListSubscribers()[1], 'next').and.callThrough();
-		let newRoom = [new ChatRoom('Room A', 2)];
+		let newRoom = [new ChatRoom('id1', 'Room A', 2)];
 		
 		service.updateRoomsList(newRoom);
 

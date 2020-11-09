@@ -2,12 +2,14 @@ import { THIS_EXPR } from '@angular/compiler/src/output/output_ast';
 import { User } from '../util/user';
 
 export class ChatRoom {
+    private _id: string;
     private _name: string;
     private _users: Array<User>;
     private _capacity: number;
     private _password;
 
-    constructor(name: string, capacity: number, users?: Array<User>, password?: string) {
+    constructor(id: string, name: string, capacity: number, users?: Array<User>, password?: string) {
+        this._id = id;
         this._name = name;
         this._capacity = capacity;
         this._users = users ? users : new Array();
@@ -16,6 +18,14 @@ export class ChatRoom {
 
     isPrivate(): boolean {
         return this._password.length ? true : false;
+    }
+
+    getID(): string {
+        return this._id;
+    }
+
+    setID(newID: string) {
+        this._id = newID;
     }
 
     getName(): string {

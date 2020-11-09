@@ -30,12 +30,14 @@ let mockChatHistory = [
 
 let mockRoomsList = [
 	{
+		id: getNonce(),
 		name: 'room 1',
 		capacity: 6,
 		password: 'pw',
 		users: [ user1, user2 ]
 	}, 
 	{
+		id: getNonce(),
 		name: 'room 2',
 		capacity: 4,
 		password: '',

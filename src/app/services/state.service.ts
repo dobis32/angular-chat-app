@@ -17,6 +17,8 @@ export class StateService {
 	private _currentUser: string; // TO DO create and implement User class
 	private _roomsList: Array<any>;
 	private _roomsListSubscribers: Array<Observer<Array<any>>>;
+	private _currentRoom: string;
+	private _currentRoomSubscribers: Array<Observer<string>>;
 
 	constructor(private socketService: SocketService) {
 		// Init values
@@ -28,6 +30,7 @@ export class StateService {
 		this._loggedInStatusSubscribers = new Array();
 		this._roomsList = new Array();
 		this._roomsListSubscribers = new Array();
+		this._currentRoomSubscribers = new Array();
 
 		// Init subs
 		this.resetSocketSubs();
@@ -65,6 +68,8 @@ export class StateService {
 			this._chatLog.push(parsedMessage);
 		});
 		this._socketSubscriptions.push(messageReceivedSub);
+
+		
 	}
 
 	unsubscribeAllSocketSubs() {
@@ -115,9 +120,9 @@ export class StateService {
 		}
 	}
 
-	async joinRoom(roomName: string): Promise<boolean> {
+	async joinRoom(roomID: string): Promise<boolean> {
 		try {
-			await this.socketService.emit('joinRoom', { room: roomName });
+			await this.socketService.emit('joinRoom', { room: roomID });
 			return true;
 		} catch(error) {
 			console.log(error);
