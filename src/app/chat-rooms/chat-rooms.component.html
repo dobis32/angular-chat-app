@@ -1,3 +1,4 @@
 <div id="chat-rooms-container">
-    <h1>chat rooms here</h1>
+    <h3>Rooms:</h3>
+    <div *ngFor="let room of getRoomsList();" (click)="joinRoom(room)" class="chat-room-listing">{{room.getName()}} {{room.getUsers().length}}/{{room.getCapacity()}}</div>
 </div>

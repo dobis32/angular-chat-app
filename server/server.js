@@ -2,26 +2,27 @@ const path = require('path');
 const http = require('http');
 const express = require('express');
 const socketio = require('socket.io');
-
-let Mockmessages;
-
+const crypto = require('crypto');
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
-
+const getNonce = function() {
+	return crypto.randomBytes(16).toString('base64')
+}
 // Set static folder
 app.use(express.static(path.join(__dirname, 'public')));
 
 const botName = 'ChatCord Bot';
-
+let user1 = { name: 'Denny Dingus', id: getNonce() }
+let user2 = { name: 'Hugh Jass', id: getNonce() }
 let mockChatHistory = [
 	{
-		user: 'Denny Dingus',
+		user: user1.name,
 		dateString: new Date().toDateString(),
 		text: 'Hi there'
 	},
 	{
-		user: 'Hugh Jass',
+		user: user2.name,
 		dateString: new Date().toDateString(),
 		text: 'Hello, Denny'
 	}
@@ -29,16 +30,27 @@ let mockChatHistory = [
 
 let mockRoomsList = [
 	{
+		id: getNonce(),
 		name: 'room 1',
-		private: true,
-		users: [ { username: 'Denny Dingus' }, { username: 'Hugh Jass' } ]
+		capacity: 6,
+		password: 'pw',
+		users: [ user1, user2 ]
+	}, 
+	{
+		id: getNonce(),
+		name: 'room 2',
+		capacity: 4,
+		password: '',
+		users: []
 	}
 ];
 
 // Run when client connects
 io.on('connection', (socket) => {
 	console.log('new user connected');
-	socket.on('joinRoom', ({ username, room }) => {});
+	socket.on('joinRoom', ({ username, room }) => {
+		socket.join(room);
+	});
 
 	// Listen for message
 	socket.on('message', (message) => {

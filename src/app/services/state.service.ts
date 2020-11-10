@@ -1,8 +1,9 @@
 import { Injectable, isDevMode } from '@angular/core';
 import { SocketService } from './socket.service';
-import { Observer, Observable, Subscription } from 'rxjs';
+import { Observer, Observable, Subscription, Subscriber } from 'rxjs';
 import { ChatMessage } from '../util/chatMessage';
 import { Socket } from '../util/socket.interface';
+import { ChatRoom } from '../util/chatRoom';
 
 @Injectable({
 	providedIn: 'root'
@@ -15,6 +16,9 @@ export class StateService {
 	private _chatLog: Array<ChatMessage>;
 	private _currentUser: string; // TO DO create and implement User class
 	private _roomsList: Array<any>;
+	private _roomsListSubscribers: Array<Observer<Array<any>>>;
+	private _currentRoom: string;
+	private _currentRoomSubscribers: Array<Observer<string>>;
 
 	constructor(private socketService: SocketService) {
 		// Init values
@@ -24,6 +28,9 @@ export class StateService {
 		this._chatLogSubscribers = new Array();
 		this._currentUserSubscribers = new Array();
 		this._loggedInStatusSubscribers = new Array();
+		this._roomsList = new Array();
+		this._roomsListSubscribers = new Array();
+		this._currentRoomSubscribers = new Array();
 
 		// Init subs
 		this.resetSocketSubs();
@@ -44,7 +51,8 @@ export class StateService {
 		this.unsubscribeAllSocketSubs();
 		let initSub = this.socketService.listen('init').subscribe(({ messages, rooms }) => {
 			let parsedMessages = this.parseChatLog(messages);
-			this._roomsList = rooms;
+			let parsedRoomsList = this.parseRoomsList(rooms);
+			this.updateRoomsList(parsedRoomsList);
 			this._setChatLog(parsedMessages);
 		});
 		this._socketSubscriptions.push(initSub);
@@ -60,6 +68,8 @@ export class StateService {
 			this._chatLog.push(parsedMessage);
 		});
 		this._socketSubscriptions.push(messageReceivedSub);
+
+		
 	}
 
 	unsubscribeAllSocketSubs() {
@@ -80,6 +90,72 @@ export class StateService {
 		if (isDevMode()) return this._socketSubscriptions;
 		else {
 			console.log(new Error('ERROR StateService._getSocketSubscriptions() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	// Rooms
+	roomsList(): Observable<Array<any>> {
+		return new Observable((sub: Subscriber<Array<any>>) => {
+			sub.next(this._roomsList);
+			this._roomsListSubscribers.push(sub);
+		});
+	}
+
+	updateRoomsList(rooms: Array<any>): void {
+		this._roomsList = rooms;
+		this._roomsListSubscribers.forEach((sub:Subscriber<Array<any>>) => {
+			sub.next(rooms);
+		})
+	}
+
+	async createRoom(roomName: string): Promise<boolean> {
+		try {
+			await this.socketService.emit('createRoom', roomName);
+			return true;
+		}
+		catch(error) {
+			console.log(error);
+			return false;
+		}
+	}
+
+	async joinRoom(roomID: string): Promise<boolean> {
+		try {
+			await this.socketService.emit('joinRoom', { room: roomID });
+			return true;
+		} catch(error) {
+			console.log(error);
+			return false;
+		}
+	}
+
+	parseRoomsList(unparsedList: Array<any>): Array<ChatRoom> {
+		let parsedList = new Array();
+
+		unparsedList.forEach( ({ name, capacity, password, users }) => {
+			try {
+				parsedList.push(new ChatRoom(name, capacity, password, users))
+			} catch(error) {
+				console.log(error);
+			}
+		})
+
+		return parsedList;
+	}
+
+	_getRoomsList(): Array<ChatRoom> {
+		if(isDevMode()) return this._roomsList;
+		else {
+			console.log('Sorry _getRoomsList() is only available in dev mode');
+			return undefined;
+		}
+	}
+
+	_getRoomsListSubscribers(): Array<Observer<Array<ChatRoom>>> {
+		if(isDevMode()) return this._roomsListSubscribers;
+		else {
+			console.log('Sorry _getRoomsListSubscribers() is only available in dev mode');
 			return undefined;
 		}
 	}

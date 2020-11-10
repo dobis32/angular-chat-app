@@ -5,7 +5,8 @@
     </div>
     <div id="chat-form-container">
         <form [formGroup]="getChatForm()" (ngSubmit)="sendChatMessage(getChatForm())">
-            <input type="text" name="message" id="message-input" formControlName="message">
+            <!-- <input type="text" name="message" id="message-input" formControlName="message"> -->
+            <textarea name="message" formControlName="message"></textarea>
             <button>Send</button>
         </form>
         <h3 id="chat-error-message" *ngIf="chatError">ERROR! Message not sent!</h3>

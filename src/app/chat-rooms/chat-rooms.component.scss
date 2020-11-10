@@ -1,6 +1,21 @@
 #chat-rooms-container {
 	display: inline-block;
 	border: 3px solid #000;
-	width: 200px;
-	height: 600px;
+	width: 140px;
+	height: 500px;
+}
+
+.chat-room-listing {
+	box-sizing: border-box;
+	cursor: pointer;
+	width: 100%;
+	padding-left: 10px;
+}
+
+.chat-room-listing:hover {
+	background-color: #999;
+}
+
+.chat-room-listing:hover::after {
+	content: '  +';
 }
