@@ -3,18 +3,102 @@ const http = require('http');
 const express = require('express');
 const socketio = require('socket.io');
 const crypto = require('crypto');
+
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
+
 const getNonce = function() {
 	return crypto.randomBytes(16).toString('base64');
 };
+
 // Set static folder
 app.use(express.static(path.join(__dirname, 'public')));
 
+class RoomUtility {
+	rooms;
+	constructor(roomsListData) {
+		this.rooms = [];
+		roomsListData.forEach((data) => {
+			this.rooms.push(new Room(data));
+		});
+	}
+
+	getRoomByIndex(index) {
+		if (index > this.rooms.length - 1) return undefined;
+		else {
+			return this.rooms[index];
+		}
+	}
+
+	roomsListJSON() {
+		let retJSON = [];
+		this.rooms.forEach((room) => {
+			retJSON.push(room.toJSON());
+		});
+		return retJSON;
+	}
+}
+
+class User {
+	id;
+	name;
+	constructor(name) {
+		this.id = getNonce();
+		this.name;
+	}
+
+	toJSON() {
+		return { id: this.id, name: this.name };
+	}
+}
+
+class Room {
+	id;
+	name;
+	capacity;
+	password;
+	users;
+
+	constructor(id, name, capacity, password = '', users = []) {
+		this.id = id;
+		this.name = name;
+		this.capacity = capacity;
+		this.password = password;
+		this.users = users;
+	}
+
+	isFull = function() {
+		return this.users.length == this.capacity ? true : false;
+	};
+
+	isPrivate = function() {
+		return this.password.length ? true : false;
+	};
+
+	joinUser = function({ id, name }) {
+		let u = new User(name, id);
+		this.users.push(user);
+	};
+
+	toJSON = function() {
+		let userJSONData = [];
+		this.users.forEach((user) => {
+			userJSONData.push(user.toJSON());
+		});
+		return {
+			id: this.id,
+			name: this.name,
+			capacity: this.capacity,
+			password: this.password,
+			users: userJSONData
+		};
+	};
+}
+
 // const botName = 'ChatCord Bot';
-let user1 = { name: 'Denny Dingus', id: getNonce() };
-let user2 = { name: 'Hugh Jass', id: getNonce() };
+// let userData1 = { name: 'Denny Dingus', id: getNonce() };
+// let userData2 = { name: 'Hugh Jass', id: getNonce() };
 // let mockChatHistory = [
 // 	{
 // 		user: user1.name,
@@ -28,13 +112,13 @@ let user2 = { name: 'Hugh Jass', id: getNonce() };
 // 	}
 // ];
 
-let mockRoomsList = [
+let roomsList = [
 	{
 		id: getNonce(),
 		name: 'room 1',
 		capacity: 6,
 		password: 'pw',
-		users: [ user1, user2 ]
+		users: [ 'Denny Dingus', 'Hugh Jass' ]
 	},
 	{
 		id: getNonce(),
@@ -45,13 +129,15 @@ let mockRoomsList = [
 	}
 ];
 
+let roomUtility = new RoomUtility(roomsList);
+
 // Run when client connects
 io.on('connection', (socket) => {
 	console.log('new user connected');
 	socket.on('joinRoom', ({ username, room }) => {
-		socket.join(room);
+		if (room.isFull(room)) socket.join(room);
 	});
-
+	console.log('ROOMS JSON', roomUtility.roomsListJSON());
 	// Listen for message
 	socket.on('message', ({ user, message }) => {
 		console.log(message);
@@ -67,7 +153,7 @@ io.on('connection', (socket) => {
 	socket.emit('init', {
 		msg: 'hello from the server',
 		// messages: mockChatHistory,
-		rooms: mockRoomsList
+		rooms: roomUtility.roomsListJSON()
 	});
 });
 
