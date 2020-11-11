@@ -3,6 +3,7 @@ import { FormGroup, FormBuilder, FormControl, Validators } from '@angular/forms'
 import { Subscription, Subscriber } from 'rxjs';
 import { ChatMessage } from '../util/chatMessage';
 import { StateService } from '../services/state.service';
+import { User } from '../util/User';
 
 @Component({
 	selector: 'app-chat-log',
@@ -14,7 +15,7 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 	private chatMessages: Array<ChatMessage>;
 	private chatForm: FormGroup;
 	chatError: boolean;
-	private userName: string; // TO DO create and implement User class
+	private currentUser: User;
 	private localSubscriptions: Array<Subscription>;
 
 	constructor(private formBuilder: FormBuilder) {
@@ -32,10 +33,10 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 			this.chatMessages = chatLog;
 		});
 		this.localSubscriptions.push(chatSub);
-		let usernameSub = this.state.currentUser().subscribe((username) => {
-			this.userName = username; // Gotta change this when I implement User class
+		let userSub = this.state.currentUser().subscribe((user: User) => {
+			this.currentUser = user; // Gotta change this when I implement User class
 		});
-		this.localSubscriptions.push(usernameSub);
+		this.localSubscriptions.push(userSub);
 	}
 
 	ngOnDestroy() {
@@ -53,13 +54,13 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 
 	getCurrentUser(): any {
 		// this will return a user class later
-		return this.userName;
+		return this.currentUser;
 	}
 
 	async sendChatMessage(fg: FormGroup) {
 		try {
 			if (!fg.valid) throw new Error('ERROR message was invalid!');
-			let message = new ChatMessage(this.userName, new Date(), fg.value.message);
+			let message = new ChatMessage(this.currentUser.getName(), new Date(), fg.value.message);
 			let result = await this.state.sendMessage(message);
 			if (result) {
 				this.chatError = false;

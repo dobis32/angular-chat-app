@@ -6,6 +6,7 @@ import { StateService } from '../services/state.service';
 import { By } from '@angular/platform-browser';
 import { ChatMessage } from '../util/chatMessage';
 import { Observable, Subscriber, Subscription } from 'rxjs';
+import { User } from '../util/user';
 
 @Component({
 	selector: `host-component`,
@@ -93,11 +94,11 @@ describe('ChatLogComponent', () => {
 
 		chatLogComponent.unsubLocalSubscriptions();
 
-		let user = 'denny';
+		let user = new User('Denny Dingus', 'some_nonce');
 		let initSubCount = chatLogComponent._getLocalSubscriberArray().length;
 		let localSubscribersArraySpy = spyOn(chatLogComponent._getLocalSubscriberArray(), 'push').and.callThrough();
 		let currentUserSubSpy = spyOn(chatLogComponent.state, 'currentUser').and.callFake(() => {
-			return new Observable((sub: Subscriber<string>) => {
+			return new Observable((sub: Subscriber<User>) => {
 				sub.next(user);
 			});
 		});
@@ -140,8 +141,9 @@ describe('ChatLogComponent', () => {
 			return Promise.resolve(true);
 		});
 
+		chatLogComponent.state._setUser(new User('Denny Dingus', 'some_nonce'));
 		chatLogComponent.getChatForm().setValue({ message: messageToSend });
-		chatLogComponent.sendChatMessage(chatLogComponent.getChatForm());
+		await chatLogComponent.sendChatMessage(chatLogComponent.getChatForm());
 
 		expect(typeof chatLogComponent.sendChatMessage).toEqual('function');
 		expect(stateSendMessageSpy).toHaveBeenCalled();

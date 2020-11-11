@@ -4,6 +4,9 @@ import { Observer, Observable, Subscription, Subscriber } from 'rxjs';
 import { ChatMessage } from '../util/chatMessage';
 import { Socket } from '../util/socket.interface';
 import { ChatRoom } from '../util/chatRoom';
+import { User } from '../util/user';
+
+let mockUser = new User('Denny Dingus', 'some_nonce');
 
 @Injectable({
 	providedIn: 'root'
@@ -11,19 +14,20 @@ import { ChatRoom } from '../util/chatRoom';
 export class StateService {
 	private _socketSubscriptions: Array<Subscription>;
 	private _chatLogSubscribers: Array<Observer<Array<ChatMessage>>>;
-	private _currentUserSubscribers: Array<Observer<string>>;
+	private _currentUserSubscribers: Array<Observer<User>>;
 	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
 	private _chatLog: Array<ChatMessage>;
-	private _currentUser: string; // TO DO create and implement User class
+	private _currentUser: User; // TO DO create and implement User class
 	private _roomsList: Array<any>;
 	private _roomsListSubscribers: Array<Observer<Array<any>>>;
-	private _currentRoom: string;
-	private _currentRoomSubscribers: Array<Observer<string>>;
+	private _currentRoom: ChatRoom;
+	private _currentRoomSubscribers: Array<Observer<ChatRoom>>;
 
 	constructor(private socketService: SocketService) {
 		// Init values
+		this._currentRoom = undefined;
 		this._chatLog = new Array();
-		this._currentUser = '';
+		this._currentUser = undefined;
 		this._socketSubscriptions = new Array();
 		this._chatLogSubscribers = new Array();
 		this._currentUserSubscribers = new Array();
@@ -49,11 +53,9 @@ export class StateService {
 	// Socket
 	resetSocketSubs(): void {
 		this.unsubscribeAllSocketSubs();
-		let initSub = this.socketService.listen('init').subscribe(({ messages, rooms }) => {
-			let parsedMessages = this.parseChatLog(messages);
+		let initSub = this.socketService.listen('init').subscribe(({ rooms }) => {
 			let parsedRoomsList = this.parseRoomsList(rooms);
 			this.updateRoomsList(parsedRoomsList);
-			this._setChatLog(parsedMessages);
 		});
 		this._socketSubscriptions.push(initSub);
 
@@ -68,8 +70,6 @@ export class StateService {
 			this._chatLog.push(parsedMessage);
 		});
 		this._socketSubscriptions.push(messageReceivedSub);
-
-		
 	}
 
 	unsubscribeAllSocketSubs() {
@@ -104,17 +104,16 @@ export class StateService {
 
 	updateRoomsList(rooms: Array<any>): void {
 		this._roomsList = rooms;
-		this._roomsListSubscribers.forEach((sub:Subscriber<Array<any>>) => {
+		this._roomsListSubscribers.forEach((sub: Subscriber<Array<any>>) => {
 			sub.next(rooms);
-		})
+		});
 	}
 
 	async createRoom(roomName: string): Promise<boolean> {
 		try {
 			await this.socketService.emit('createRoom', roomName);
 			return true;
-		}
-		catch(error) {
+		} catch (error) {
 			console.log(error);
 			return false;
 		}
@@ -122,30 +121,41 @@ export class StateService {
 
 	async joinRoom(roomID: string): Promise<boolean> {
 		try {
-			await this.socketService.emit('joinRoom', { room: roomID });
-			return true;
-		} catch(error) {
+			await this.socketService.emit('joinRoom', { user: this._currentUser, room: roomID });
+			let room: ChatRoom = this._roomsList.find((room: ChatRoom) => {
+				room.getID() == roomID;
+			});
+			if (this._setRoom(room)) return true;
+			else throw new Error('That room does not seem to exist...');
+		} catch (error) {
 			console.log(error);
 			return false;
 		}
 	}
 
+	private _setRoom(room: ChatRoom): boolean {
+		if (room) {
+			this._currentRoom = room;
+			return true;
+		} else return false;
+	}
+
 	parseRoomsList(unparsedList: Array<any>): Array<ChatRoom> {
 		let parsedList = new Array();
 
-		unparsedList.forEach( ({ name, capacity, password, users }) => {
+		unparsedList.forEach(({ id, name, capacity, password, users }) => {
 			try {
-				parsedList.push(new ChatRoom(name, capacity, password, users))
-			} catch(error) {
+				parsedList.push(new ChatRoom(id, name, capacity, users, password));
+			} catch (error) {
 				console.log(error);
 			}
-		})
+		});
 
 		return parsedList;
 	}
 
 	_getRoomsList(): Array<ChatRoom> {
-		if(isDevMode()) return this._roomsList;
+		if (isDevMode()) return this._roomsList;
 		else {
 			console.log('Sorry _getRoomsList() is only available in dev mode');
 			return undefined;
@@ -153,7 +163,7 @@ export class StateService {
 	}
 
 	_getRoomsListSubscribers(): Array<Observer<Array<ChatRoom>>> {
-		if(isDevMode()) return this._roomsListSubscribers;
+		if (isDevMode()) return this._roomsListSubscribers;
 		else {
 			console.log('Sorry _getRoomsListSubscribers() is only available in dev mode');
 			return undefined;
@@ -208,21 +218,25 @@ export class StateService {
 
 	// User
 	currentUser() {
-		return new Observable((subscriber: Observer<any>) => {
+		return new Observable((subscriber: Observer<User>) => {
 			this._currentUserSubscribers.push(subscriber);
 			subscriber.next(this._currentUser);
 		});
 	}
 
+	currentRoomIndex(): Observable<number> {
+		return new Observable((subscriber: Observer<number>) => {});
+	}
+
 	logout() {
-		this._currentUser = '';
+		this._currentUser = undefined;
 		this.updateCurrentUserSubscribers();
 		this.updateLoggedInSubscribers();
 	}
 
 	loggedInStatus(): Observable<boolean> {
 		return new Observable((subscriber: Observer<boolean>) => {
-			let bool = this._currentUser.length ? true : false;
+			let bool = this._currentUser ? true : false;
 
 			this._loggedInStatusSubscribers.push(subscriber);
 			subscriber.next(bool);
@@ -237,13 +251,13 @@ export class StateService {
 
 	updateLoggedInSubscribers(): void {
 		this._loggedInStatusSubscribers.forEach((sub) => {
-			sub.next(this._currentUser.length ? true : false);
+			sub.next(this._currentUser ? true : false);
 		});
 	}
 
 	login(username: string, password: string): boolean {
 		try {
-			this._currentUser = username;
+			this._currentUser = mockUser;
 			this.updateCurrentUserSubscribers();
 			this.updateLoggedInSubscribers();
 			return true;
@@ -252,7 +266,14 @@ export class StateService {
 		}
 	}
 
-	_getCurrentUser(): string {
+	_setUser(user: User) {
+		if (isDevMode()) this._currentUser = user;
+		else {
+			console.log(new Error('ERROR StateService._getCurrentUser() is only availabe in dev mode.'));
+		}
+	}
+
+	_getCurrentUser(): User {
 		if (isDevMode()) return this._currentUser;
 		else {
 			console.log(new Error('ERROR StateService._getCurrentUser() is only availabe in dev mode.'));
@@ -260,7 +281,7 @@ export class StateService {
 		}
 	}
 
-	_getCurrentUserSubscribers(): Array<Observer<string>> {
+	_getCurrentUserSubscribers(): Array<Observer<User>> {
 		if (isDevMode()) return this._currentUserSubscribers;
 		else {
 			console.log(new Error('ERROR StateService._getCurrentUserSubscribers() is only availabe in dev mode.'));

@@ -7,26 +7,26 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 const getNonce = function() {
-	return crypto.randomBytes(16).toString('base64')
-}
+	return crypto.randomBytes(16).toString('base64');
+};
 // Set static folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-const botName = 'ChatCord Bot';
-let user1 = { name: 'Denny Dingus', id: getNonce() }
-let user2 = { name: 'Hugh Jass', id: getNonce() }
-let mockChatHistory = [
-	{
-		user: user1.name,
-		dateString: new Date().toDateString(),
-		text: 'Hi there'
-	},
-	{
-		user: user2.name,
-		dateString: new Date().toDateString(),
-		text: 'Hello, Denny'
-	}
-];
+// const botName = 'ChatCord Bot';
+let user1 = { name: 'Denny Dingus', id: getNonce() };
+let user2 = { name: 'Hugh Jass', id: getNonce() };
+// let mockChatHistory = [
+// 	{
+// 		user: user1.name,
+// 		dateString: new Date().toDateString(),
+// 		text: 'Hi there'
+// 	},
+// 	{
+// 		user: user2.name,
+// 		dateString: new Date().toDateString(),
+// 		text: 'Hello, Denny'
+// 	}
+// ];
 
 let mockRoomsList = [
 	{
@@ -35,7 +35,7 @@ let mockRoomsList = [
 		capacity: 6,
 		password: 'pw',
 		users: [ user1, user2 ]
-	}, 
+	},
 	{
 		id: getNonce(),
 		name: 'room 2',
@@ -53,10 +53,10 @@ io.on('connection', (socket) => {
 	});
 
 	// Listen for message
-	socket.on('message', (message) => {
+	socket.on('message', ({ user, message }) => {
 		console.log(message);
+		socket.to(user.room).emit('incomingMessage', message);
 		socket.emit('messageReceived', message);
-		socket.broadcast.emit('incomingMessage', message);
 	});
 
 	// Runs when client disconnects
