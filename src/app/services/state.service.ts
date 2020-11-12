@@ -59,17 +59,40 @@ export class StateService {
 		});
 		this._socketSubscriptions.push(initSub);
 
-		let incomingMessageSub = this.socketService.listen('incomingMessage').subscribe(({ user, date, text }) => {
-			let parsedMessage = new ChatMessage(user, date, text);
-			this._chatLog.push(parsedMessage);
-		});
-		this._socketSubscriptions.push(incomingMessageSub);
+		let joinSub = this.socketService.listen('join').subscribe(({roomID}) => {
+			console.log(`JOIN SUB roomID: ${roomID}`)
+			if(roomID) {
+				// join OK
+				
+			}
+			else {
+				// join FAIL
 
-		let messageReceivedSub = this.socketService.listen('messageReceived').subscribe(({ user, date, text }) => {
-			let parsedMessage = new ChatMessage(user, date, text);
-			this._chatLog.push(parsedMessage);
+			}
+		})
+
+		let roomSub = this.socketService.listen('join').subscribe(({roomID}) => {
+			console.log(roomID);
 		});
-		this._socketSubscriptions.push(messageReceivedSub);
+		this._socketSubscriptions.push(roomSub);
+
+		let messageSub = this.socketService.listen('message').subscribe(({username, timeStamp, message}) => {
+			if(this._chatLog) this._chatLog.push(new ChatMessage(username, new Date(timeStamp), message));
+
+		});
+		this._socketSubscriptions.push(messageSub);
+
+		// let incomingMessageSub = this.socketService.listen('incomingMessage').subscribe(({ user, date, text }) => {
+		// 	let parsedMessage = new ChatMessage(user, date, text);
+		// 	this._chatLog.push(parsedMessage);
+		// });
+		// this._socketSubscriptions.push(incomingMessageSub);
+
+		// let messageReceivedSub = this.socketService.listen(messageReceived').subscribe(({ user, date, text }) => {
+		// 	let parsedMessage = new ChatMessage(user, date, text);
+		// 	this._chatLog.push(parsedMessage);
+		// });
+		// this._socketSubscriptions.push(messageReceivedSub);
 	}
 
 	unsubscribeAllSocketSubs() {
@@ -121,7 +144,7 @@ export class StateService {
 
 	async joinRoom(roomID: string): Promise<boolean> {
 		try {
-			await this.socketService.emit('joinRoom', { user: this._currentUser, room: roomID });
+			await this.socketService.emit('joinRoom', { user: this._currentUser.getId(), room: roomID });
 			let room: ChatRoom = this._roomsList.find((room: ChatRoom) => {
 				room.getID() == roomID;
 			});
@@ -142,8 +165,8 @@ export class StateService {
 
 	parseRoomsList(unparsedList: Array<any>): Array<ChatRoom> {
 		let parsedList = new Array();
-
-		unparsedList.forEach(({ id, name, capacity, password, users }) => {
+		console.log("UNPARSED ROOMS LIST", unparsedList)
+		unparsedList.forEach(({ id, name, capacity, users, password }) => {
 			try {
 				parsedList.push(new ChatRoom(id, name, capacity, users, password));
 			} catch (error) {

@@ -20,7 +20,9 @@ class RoomUtility {
 	constructor(roomsListData) {
 		this.rooms = [];
 		roomsListData.forEach((data) => {
-			this.rooms.push(new Room(data));
+			let { id, name, capacity, password, users} = data;
+
+			this.rooms.push(new Room(id, name, capacity, password, users));
 		});
 	}
 
@@ -31,6 +33,10 @@ class RoomUtility {
 		}
 	}
 
+	getRoomByID(id) {
+		return this.rooms.find(rm => rm.id == id);
+	}
+
 	roomsListJSON() {
 		let retJSON = [];
 		this.rooms.forEach((room) => {
@@ -39,6 +45,22 @@ class RoomUtility {
 		return retJSON;
 	}
 }
+
+class UsersUtility {
+	usersMap;
+	constructor(usersListData) {
+		this.usersMap = {};
+		usersListData.forEach((data) => {
+			let user = new User(data);
+			this.usersMap[user.id] = user;
+		});
+	}
+
+	getUserByID(id) {
+		return this.usersMap[id];
+	}
+}
+
 
 class User {
 	id;
@@ -76,23 +98,29 @@ class Room {
 		return this.password.length ? true : false;
 	};
 
-	joinUser = function({ id, name }) {
+	joinUser = function({ id }) {
 		let u = new User(name, id);
 		this.users.push(user);
 	};
 
+	
+
 	toJSON = function() {
 		let userJSONData = [];
-		this.users.forEach((user) => {
-			userJSONData.push(user.toJSON());
+		this.users.forEach((userID) => {
+			let user = userUtility.getUserByID(user);
+			if (user) userJSONData.push(user.toJSON());
+			else console.log('ERROR user', userID, 'not found...');
+
 		});
-		return {
+		let json = {
 			id: this.id,
 			name: this.name,
 			capacity: this.capacity,
 			password: this.password,
 			users: userJSONData
 		};
+		return json;
 	};
 }
 
@@ -112,13 +140,17 @@ class Room {
 // 	}
 // ];
 
+let usersList = ['Denny Dingus', 'Hugh Jass'];
+
+let usersUtility = new UsersUtility(usersList);
+
 let roomsList = [
 	{
 		id: getNonce(),
 		name: 'room 1',
 		capacity: 6,
 		password: 'pw',
-		users: [ 'Denny Dingus', 'Hugh Jass' ]
+		users: []
 	},
 	{
 		id: getNonce(),
@@ -129,18 +161,35 @@ let roomsList = [
 	}
 ];
 
+
 let roomUtility = new RoomUtility(roomsList);
 
 // Run when client connects
 io.on('connection', (socket) => {
 	console.log('new user connected');
-	socket.on('joinRoom', ({ username, room }) => {
-		if (room.isFull(room)) socket.join(room);
+	socket.on('join', ({ userID, roomID }) => {
+		console.log(`JOIN ROOM: userID ${userID} & roomID ${roomID}`);
+		let room = roomUtility.getRoomByID(roomID);
+		let user = userUtility.getUserByID(userID);
+		if (!room || room.isFull() || !user) { // room exists and isn't full and user exists
+			socket.emit('join', {roomID: undefined})
+		}
+		else
+		{
+			room.users.push(user.id);
+			socket.join(room.id);
+			socket.to(room.id).emit('user', {user: user.toJSON()});
+			socket.emit('join', {roomID: room.id});
+		}
 	});
-	console.log('ROOMS JSON', roomUtility.roomsListJSON());
+
+	socket.on('leave', ({userID, roomID}) => {
+
+	});
+	// console.log('ROOMS JSON', roomUtility.roomsListJSON());
 	// Listen for message
 	socket.on('message', ({ user, message }) => {
-		console.log(message);
+		// console.log(message);
 		socket.to(user.room).emit('incomingMessage', message);
 		socket.emit('messageReceived', message);
 	});
