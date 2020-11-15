@@ -10,24 +10,28 @@ import { ChatRoom } from '../util/chatRoom';
 export class ChatRoomsComponent implements OnInit, OnDestroy {
 	@Input() state: StateService;
 	private _roomsList: Array<any>;
-	private _roomsListSubscription: Subscription;
+	private _currentRoom: ChatRoom;
+	private _subscriptions: Array<Subscription>;
 
 	constructor() {
 		this._roomsList = new Array();
+		this._subscriptions = new Array();
 	}
 
 	ngOnInit(): void {
-		this._roomsListSubscription = this.state.roomsList().subscribe((roomsList: Array<any>) => {
+		let roomListSub = this.state.roomsList().subscribe((roomsList: Array<any>) => {
 			this._roomsList = roomsList;
-			console.log('CHAT ROOMS LIST', roomsList);
 		});
+		this._subscriptions.push(roomListSub);
+
+		let currentRoomSub = this.state.currentRoom().subscribe((currentRoom: ChatRoom) => {
+			this._currentRoom = currentRoom;
+		});
+		this._subscriptions.push(currentRoomSub);
 	}
 
 	ngOnDestroy(): void {
-		if (this._roomsListSubscription) {
-			this._roomsListSubscription.unsubscribe();
-			this._roomsListSubscription = undefined;
-		}
+		while (this._subscriptions.length) this._subscriptions.shift().unsubscribe();
 	}
 
 	getRoomsList(): Array<any> {
@@ -43,9 +47,14 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 			let result = await this.state.joinRoom(room.getID());
 			if (!result) throw new Error();
 		} catch (error) {
-			console.log(error);
 			alert('Failed to join room. Room is either at capacity or something else went wrong on the server-side.');
 		}
+	}
+
+	isCurrentRoom(room: ChatRoom): boolean {
+		if (this._currentRoom == undefined) return false;
+		else if (room.getID() == this._currentRoom.getID()) return true;
+		else return false;
 	}
 
 	_getRoomsList(): Array<any> {
@@ -56,11 +65,18 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	_getRoomslistSubscription(): Subscription {
-		if (isDevMode()) return this._roomsListSubscription;
+	_getSubscriptions(): Array<Subscription> {
+		if (isDevMode()) return this._subscriptions;
 		else {
 			console.log('Sorry _getRoomslistSubscription() is only available in dev mode');
 			return undefined;
+		}
+	}
+
+	_setSubscriptions(subs: Array<Subscription>) {
+		if (isDevMode()) this._subscriptions = subs;
+		else {
+			console.log('Sorry _setSubscriptions() is only available in dev mode');
 		}
 	}
 }

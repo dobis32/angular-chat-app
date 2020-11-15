@@ -27,3 +27,7 @@
 .chat-room-listing:hover::after {
 	content: '  +';
 }
+
+.current-room {
+	background-color: #f00;
+}

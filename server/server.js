@@ -15,12 +15,14 @@ const getNonce = function() {
 // Set static folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-class RoomUtility {
+const denny = 'Denny Dingus';
+const dennyID = 'dennyID';
+class RoomsUtility {
 	rooms;
 	constructor(roomsListData) {
 		this.rooms = [];
 		roomsListData.forEach((data) => {
-			let { id, name, capacity, password, users} = data;
+			let { id, name, capacity, password, users } = data;
 
 			this.rooms.push(new Room(id, name, capacity, password, users));
 		});
@@ -34,7 +36,7 @@ class RoomUtility {
 	}
 
 	getRoomByID(id) {
-		return this.rooms.find(rm => rm.id == id);
+		return this.rooms.find((rm) => rm.id == id);
 	}
 
 	roomsListJSON() {
@@ -50,8 +52,8 @@ class UsersUtility {
 	usersMap;
 	constructor(usersListData) {
 		this.usersMap = {};
-		usersListData.forEach((data) => {
-			let user = new User(data);
+		usersListData.forEach((name) => {
+			let user = new User(name);
 			this.usersMap[user.id] = user;
 		});
 	}
@@ -61,13 +63,12 @@ class UsersUtility {
 	}
 }
 
-
 class User {
 	id;
 	name;
 	constructor(name) {
-		this.id = getNonce();
-		this.name;
+		this.id = name == denny ? dennyID : getNonce();
+		this.name = name;
 	}
 
 	toJSON() {
@@ -98,20 +99,24 @@ class Room {
 		return this.password.length ? true : false;
 	};
 
-	joinUser = function({ id }) {
-		let u = new User(name, id);
-		this.users.push(user);
+	joinUser = function(userID) {
+		this.users.push(userID);
 	};
 
-	
+	removeUser = function(userID) {
+		let temp = [];
+		this.users.forEach((user) => {
+			if (user.getID() != userID) temp.push(user);
+		});
+		this.users = temp;
+	};
 
 	toJSON = function() {
 		let userJSONData = [];
 		this.users.forEach((userID) => {
-			let user = userUtility.getUserByID(user);
+			let user = usersUtility.getUserByID(userID);
 			if (user) userJSONData.push(user.toJSON());
 			else console.log('ERROR user', userID, 'not found...');
-
 		});
 		let json = {
 			id: this.id,
@@ -140,9 +145,7 @@ class Room {
 // 	}
 // ];
 
-let usersList = ['Denny Dingus', 'Hugh Jass'];
-
-let usersUtility = new UsersUtility(usersList);
+let usersList = [ denny, 'Hugh Jass' ];
 
 let roomsList = [
 	{
@@ -161,32 +164,36 @@ let roomsList = [
 	}
 ];
 
+let usersUtility = new UsersUtility(usersList);
 
-let roomUtility = new RoomUtility(roomsList);
+let roomsUtility = new RoomsUtility(roomsList);
 
 // Run when client connects
 io.on('connection', (socket) => {
 	console.log('new user connected');
-	socket.on('join', ({ userID, roomID }) => {
-		console.log(`JOIN ROOM: userID ${userID} & roomID ${roomID}`);
-		let room = roomUtility.getRoomByID(roomID);
-		let user = userUtility.getUserByID(userID);
-		if (!room || room.isFull() || !user) { // room exists and isn't full and user exists
-			socket.emit('join', {roomID: undefined})
-		}
-		else
-		{
-			room.users.push(user.id);
-			socket.join(room.id);
-			socket.to(room.id).emit('user', {user: user.toJSON()});
-			socket.emit('join', {roomID: room.id});
+	socket.on('join', ({ user, room }) => {
+		console.log(`JOIN ROOM: userID ${user} & roomID ${room}`);
+		let roomInstance = roomsUtility.getRoomByID(room);
+		let userInstance = usersUtility.getUserByID(user);
+		console.log('ROOM INSTANCE', roomInstance, 'USER INSTANCE', userInstance);
+		if (!roomInstance || roomInstance.isFull()) {
+			// room exists and isn't full and user exists
+			roomInstance.joinUser(user);
+			socket.emit('join', { room });
+		} else {
+			socket.join(room);
+			socket.to(room).emit('user', { user: userInstance.toJSON() });
+			socket.emit('join', { room: room });
 		}
 	});
 
-	socket.on('leave', ({userID, roomID}) => {
-
+	socket.on('leave', ({ user, room }) => {
+		let roomInstance = roomsUtility.getRoomByID(room);
+		roomInstance.removeUser(user);
+		console.log('user', user, 'has left:', roomInstance.users);
+		socket.emit('join', { leave: true });
 	});
-	// console.log('ROOMS JSON', roomUtility.roomsListJSON());
+
 	// Listen for message
 	socket.on('message', ({ user, message }) => {
 		// console.log(message);
@@ -198,11 +205,12 @@ io.on('connection', (socket) => {
 	socket.on('disconnect', () => {
 		console.log('user disconnected');
 	});
-
+	let devUser = usersUtility.getUserByID(dennyID);
 	socket.emit('init', {
 		msg: 'hello from the server',
 		// messages: mockChatHistory,
-		rooms: roomUtility.roomsListJSON()
+		rooms: roomsUtility.roomsListJSON(),
+		devUserJSON: devUser.toJSON()
 	});
 });
 

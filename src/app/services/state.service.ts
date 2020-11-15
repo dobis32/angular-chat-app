@@ -18,7 +18,7 @@ export class StateService {
 	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
 	private _chatLog: Array<ChatMessage>;
 	private _currentUser: User; // TO DO create and implement User class
-	private _roomsList: Array<any>;
+	private _roomsList: Array<ChatRoom>;
 	private _roomsListSubscribers: Array<Observer<Array<any>>>;
 	private _currentRoom: ChatRoom;
 	private _currentRoomSubscribers: Array<Observer<ChatRoom>>;
@@ -53,32 +53,34 @@ export class StateService {
 	// Socket
 	resetSocketSubs(): void {
 		this.unsubscribeAllSocketSubs();
-		let initSub = this.socketService.listen('init').subscribe(({ rooms }) => {
+		let initSub = this.socketService.listen('init').subscribe(({ rooms, devUserJSON }) => {
+			let { name, id } = devUserJSON;
+			this._currentUser = new User(name, id);
 			let parsedRoomsList = this.parseRoomsList(rooms);
 			this.updateRoomsList(parsedRoomsList);
 		});
 		this._socketSubscriptions.push(initSub);
 
-		let joinSub = this.socketService.listen('join').subscribe(({roomID}) => {
-			console.log(`JOIN SUB roomID: ${roomID}`)
-			if(roomID) {
-				// join OK
-				
-			}
-			else {
+		let roomSub = this.socketService.listen('join').subscribe(({ room, leave }) => {
+			console.log(`JOIN SUB roomID: ${room}`);
+			if (leave) {
+				// leave room
+				this.leaveCurrentRoom();
+			} else if (room) {
+				// join SUCCESS
+				let roomInstance: ChatRoom = this._roomsList.find((rm: ChatRoom) => {
+					rm.getID() == room;
+				});
+				if (roomInstance) this.updateCurrentRoom(roomInstance);
+				else console.log('whoops, that room does not seem to exist...');
+			} else {
 				// join FAIL
-
 			}
-		})
-
-		let roomSub = this.socketService.listen('join').subscribe(({roomID}) => {
-			console.log(roomID);
 		});
 		this._socketSubscriptions.push(roomSub);
 
-		let messageSub = this.socketService.listen('message').subscribe(({username, timeStamp, message}) => {
-			if(this._chatLog) this._chatLog.push(new ChatMessage(username, new Date(timeStamp), message));
-
+		let messageSub = this.socketService.listen('message').subscribe(({ username, timeStamp, message }) => {
+			if (this._chatLog) this._chatLog.push(new ChatMessage(username, new Date(timeStamp), message));
 		});
 		this._socketSubscriptions.push(messageSub);
 
@@ -118,6 +120,13 @@ export class StateService {
 	}
 
 	// Rooms
+	currentRoom(): Observable<ChatRoom> {
+		return new Observable((sub: Subscriber<ChatRoom>) => {
+			sub.next(this._currentRoom);
+			this._currentRoomSubscribers.push(sub);
+		});
+	}
+
 	roomsList(): Observable<Array<any>> {
 		return new Observable((sub: Subscriber<Array<any>>) => {
 			sub.next(this._roomsList);
@@ -127,8 +136,29 @@ export class StateService {
 
 	updateRoomsList(rooms: Array<any>): void {
 		this._roomsList = rooms;
-		this._roomsListSubscribers.forEach((sub: Subscriber<Array<any>>) => {
-			sub.next(rooms);
+		this.updateRoomsListSubscribers();
+	}
+
+	updateRoomsListSubscribers(): void {
+		this._roomsListSubscribers.forEach((sub: Observer<Array<ChatRoom>>) => {
+			sub.next(this._roomsList);
+		});
+	}
+
+	updateCurrentRoom(room: ChatRoom) {
+		this._currentRoom = room;
+		this.updateCurrentRoomSubscribers();
+	}
+
+	leaveCurrentRoom(): void {
+		this._currentRoom = undefined;
+		this.updateCurrentRoomSubscribers();
+		this.socketService.emit('leave', { user: this._currentUser.getId() });
+	}
+
+	updateCurrentRoomSubscribers(): void {
+		this._currentRoomSubscribers.forEach((obs: Observer<ChatRoom>) => {
+			obs.next(this._currentRoom);
 		});
 	}
 
@@ -144,28 +174,16 @@ export class StateService {
 
 	async joinRoom(roomID: string): Promise<boolean> {
 		try {
-			await this.socketService.emit('joinRoom', { user: this._currentUser.getId(), room: roomID });
-			let room: ChatRoom = this._roomsList.find((room: ChatRoom) => {
-				room.getID() == roomID;
-			});
-			if (this._setRoom(room)) return true;
-			else throw new Error('That room does not seem to exist...');
+			if (!roomID) throw new Error();
+			await this.socketService.emit('join', { user: this._currentUser.getId(), room: roomID });
+			return true;
 		} catch (error) {
-			console.log(error);
 			return false;
 		}
 	}
 
-	private _setRoom(room: ChatRoom): boolean {
-		if (room) {
-			this._currentRoom = room;
-			return true;
-		} else return false;
-	}
-
 	parseRoomsList(unparsedList: Array<any>): Array<ChatRoom> {
 		let parsedList = new Array();
-		console.log("UNPARSED ROOMS LIST", unparsedList)
 		unparsedList.forEach(({ id, name, capacity, users, password }) => {
 			try {
 				parsedList.push(new ChatRoom(id, name, capacity, users, password));
@@ -189,6 +207,30 @@ export class StateService {
 		if (isDevMode()) return this._roomsListSubscribers;
 		else {
 			console.log('Sorry _getRoomsListSubscribers() is only available in dev mode');
+			return undefined;
+		}
+	}
+
+	_setCurrentRoom(room: ChatRoom) {
+		if (isDevMode()) this._currentRoom = room;
+		else {
+			console.log('Sorry _setCurrentRoom() is only available in dev mode');
+			return undefined;
+		}
+	}
+
+	_getCurrentRoom(): ChatRoom {
+		if (isDevMode()) return this._currentRoom;
+		else {
+			console.log('Sorry _getCurrentRoom() is only available in dev mode');
+			return undefined;
+		}
+	}
+
+	_getCurrentRoomSubscribers(): Array<Observer<ChatRoom>> {
+		if (isDevMode()) return this._currentRoomSubscribers;
+		else {
+			console.log('Sorry _getCurrentRoomSubscribers() is only available in dev mode');
 			return undefined;
 		}
 	}
@@ -280,7 +322,7 @@ export class StateService {
 
 	login(username: string, password: string): boolean {
 		try {
-			this._currentUser = mockUser;
+			// this._currentUser = mockUser;
 			this.updateCurrentUserSubscribers();
 			this.updateLoggedInSubscribers();
 			return true;

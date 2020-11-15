@@ -3,12 +3,11 @@ import { TestBed } from '@angular/core/testing';
 import { StateService } from './state.service';
 import { MockSocketService } from '../util/testing/MockSocketService';
 import { SocketService } from './socket.service';
-import { Socket } from '../util/socket.interface';
 import { ChatMessage } from '../util/chatMessage';
 import { Subscription } from 'rxjs';
 import { ChatRoom } from '../util/chatRoom';
-import { ChatRoomsComponent } from '../chat-rooms/chat-rooms.component';
 import { User } from '../util/user';
+import { hostViewClassName } from '@angular/compiler';
 
 describe('StateService', () => {
 	let service: StateService;
@@ -102,7 +101,7 @@ describe('StateService', () => {
 	// 	expect(service._getChatLog().length).toBeGreaterThan(initMessageCount);
 	// });
 
-	// Rooms List
+	// Chat Rooms
 	it('should have an array for holding data about available chat rooms', () => {
 		expect(Array.isArray(service._getRoomsList())).toBeTrue();
 	});
@@ -118,18 +117,71 @@ describe('StateService', () => {
 		expect(Array.isArray(service._getRoomsListSubscribers())).toBeTrue();
 	});
 
-	it('should have a funciton for updating the chat rooms array and calls the "next" function of all corresponding observers', () => {
-		service.roomsList().subscribe();
-		service.roomsList().subscribe();
+	it('should have a funciton for updating the chat rooms array and updates rooms list subscribers', () => {
+		let spy = spyOn(service, 'updateRoomsListSubscribers').and.callThrough();
+
+		let newRoomsList = [ new ChatRoom('id1', 'Room A', 2) ];
+
+		service.updateRoomsList(newRoomsList);
+
+		expect(typeof service.updateRoomsList).toEqual('function');
+		expect(spy).toHaveBeenCalledWith();
+	});
+
+	it('should have a function for updating rooms list subscribers', () => {
+		let sub1: Subscription = service.roomsList().subscribe(); // init observer
+		let sub2: Subscription = service.roomsList().subscribe(); // init observer
 
 		let spy1 = spyOn(service._getRoomsListSubscribers()[0], 'next').and.callThrough();
 		let spy2 = spyOn(service._getRoomsListSubscribers()[1], 'next').and.callThrough();
-		let newRoom = [ new ChatRoom('id1', 'Room A', 2) ];
 
-		service.updateRoomsList(newRoom);
+		service.updateRoomsListSubscribers();
 
-		expect(spy1).toHaveBeenCalledWith(newRoom);
-		expect(spy2).toHaveBeenCalledWith(newRoom);
+		expect(typeof service.updateRoomsListSubscribers).toEqual('function');
+		expect(spy1).toHaveBeenCalled();
+		expect(spy2).toHaveBeenCalled();
+
+		sub1.unsubscribe();
+		sub2.unsubscribe();
+	});
+
+	it('should have a public method/function for exposing an Observalbe of the current ChatRoom', () => {
+		let obs = service.currentRoom();
+
+		expect(typeof service.currentRoom).toEqual('function');
+		expect(typeof obs.subscribe).toEqual('function');
+	});
+
+	it('should have an array for current ChatRoom subscribers', () => {
+		expect(Array.isArray(service._getCurrentRoomSubscribers())).toBeTrue();
+	});
+
+	it('should have a funciton for updating the current ChatRoom and updates current ChatRoom subscribers', () => {
+		let spy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
+
+		let room = new ChatRoom('id1', 'Room A', 2);
+
+		service.updateCurrentRoom(room);
+
+		expect(typeof service.updateRoomsList).toEqual('function');
+		expect(spy).toHaveBeenCalledWith();
+	});
+
+	it('should have a function for updating current room subscribers', () => {
+		let sub1: Subscription = service.currentRoom().subscribe(); // init observer
+		let sub2: Subscription = service.currentRoom().subscribe(); // init observer
+
+		let spy1 = spyOn(service._getCurrentRoomSubscribers()[0], 'next').and.callThrough();
+		let spy2 = spyOn(service._getCurrentRoomSubscribers()[1], 'next').and.callThrough();
+
+		service.updateCurrentRoomSubscribers();
+
+		expect(typeof service.updateCurrentRoomSubscribers).toEqual('function');
+		expect(spy1).toHaveBeenCalled();
+		expect(spy2).toHaveBeenCalled();
+
+		sub1.unsubscribe();
+		sub2.unsubscribe();
 	});
 
 	it('should have a function for exposing an Observable of the index of the current room', () => {
@@ -160,7 +212,33 @@ describe('StateService', () => {
 
 		await service.joinRoom(roomToJoin);
 
-		expect(socketSpy).toHaveBeenCalledWith('joinRoom', { user: service._getCurrentUser(), room: roomToJoin });
+		expect(socketSpy).toHaveBeenCalledWith('join', {
+			user: service._getCurrentUser().getName(),
+			room: roomToJoin
+		});
+	});
+
+	it('should have a function to leave the current ChatRoom and update corresponding observers', () => {
+		service._setCurrentRoom(new ChatRoom('id', 'test room', 6, [], ''));
+
+		let spy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
+
+		service.leaveCurrentRoom();
+
+		expect(typeof service.leaveCurrentRoom).toEqual('function');
+		expect(spy).toHaveBeenCalled();
+		expect(service._getCurrentRoom()).toEqual(undefined);
+	});
+
+	it('should have a function to parse rooms list data into ChatRoom instances and return an array of said ChatRooms', () => {
+		let parsed = service.parseRoomsList([
+			{ id: 'id', name: 'name', capacity: 6 },
+			{ id: 'id', name: 'name', capacity: 6 },
+			{ id: 'id', name: 'name', capacity: 6 }
+		]);
+
+		expect(typeof service.parseRoomsList).toEqual('function');
+		expect(Array.isArray(parsed)).toBeTrue();
 	});
 
 	//Chat log
