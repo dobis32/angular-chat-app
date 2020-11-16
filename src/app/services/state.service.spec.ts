@@ -213,7 +213,7 @@ describe('StateService', () => {
 		await service.joinRoom(roomToJoin);
 
 		expect(socketSpy).toHaveBeenCalledWith('join', {
-			user: service._getCurrentUser().getName(),
+			user: service._getCurrentUser().getId(),
 			room: roomToJoin
 		});
 	});

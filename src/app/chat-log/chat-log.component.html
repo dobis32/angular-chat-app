@@ -1,11 +1,12 @@
 <div id="chat-log-container">
     <div id="chat-container">
         <h3>Chat:</h3>
-        <app-chat-message *ngFor="let msg of getChatMessages();" [messageBuffer]="msg"></app-chat-message>
+        <div *ngIf="getCurrentRoom()" id="messages-container">
+            <app-chat-message *ngFor="let msg of getChatMessages();" [messageBuffer]="msg"></app-chat-message>
+        </div>
     </div>
     <div id="chat-form-container">
         <form [formGroup]="getChatForm()" (ngSubmit)="sendChatMessage(getChatForm())">
-            <!-- <input type="text" name="message" id="message-input" formControlName="message"> -->
             <textarea name="message" formControlName="message"></textarea>
             <button>Send</button>
         </form>

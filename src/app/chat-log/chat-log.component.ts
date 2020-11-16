@@ -4,6 +4,7 @@ import { Subscription, Subscriber } from 'rxjs';
 import { ChatMessage } from '../util/chatMessage';
 import { StateService } from '../services/state.service';
 import { User } from '../util/User';
+import { ChatRoom } from '../util/chatRoom';
 
 @Component({
 	selector: 'app-chat-log',
@@ -17,6 +18,7 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 	chatError: boolean;
 	private currentUser: User;
 	private localSubscriptions: Array<Subscription>;
+	private currentRoom: ChatRoom;
 
 	constructor(private formBuilder: FormBuilder) {
 		this.chatError = false;
@@ -33,10 +35,16 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 			this.chatMessages = chatLog;
 		});
 		this.localSubscriptions.push(chatSub);
+
 		let userSub = this.state.currentUser().subscribe((user: User) => {
 			this.currentUser = user; // Gotta change this when I implement User class
 		});
 		this.localSubscriptions.push(userSub);
+
+		let chatRoomSub = this.state.currentRoom().subscribe((room: ChatRoom) => {
+			this.currentRoom = room;
+		});
+		this.localSubscriptions.push(chatRoomSub);
 	}
 
 	ngOnDestroy() {
@@ -52,9 +60,13 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 		return this.chatForm;
 	}
 
-	getCurrentUser(): any {
+	getCurrentUser(): User {
 		// this will return a user class later
 		return this.currentUser;
+	}
+
+	getCurrentRoom(): ChatRoom {
+		return this.currentRoom;
 	}
 
 	async sendChatMessage(fg: FormGroup) {

@@ -12,91 +12,136 @@ let mockUser = new User('Denny Dingus', 'some_nonce');
 	providedIn: 'root'
 })
 export class StateService {
-	private _socketSubscriptions: Array<Subscription>;
-	private _chatLogSubscribers: Array<Observer<Array<ChatMessage>>>;
-	private _currentUserSubscribers: Array<Observer<User>>;
-	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
+	// Data
 	private _chatLog: Array<ChatMessage>;
+	private _currentRoom: ChatRoom;
 	private _currentUser: User; // TO DO create and implement User class
 	private _roomsList: Array<ChatRoom>;
-	private _roomsListSubscribers: Array<Observer<Array<any>>>;
-	private _currentRoom: ChatRoom;
+
+	// Subcriber/Observer Arrays
+	private _chatLogSubscribers: Array<Observer<Array<ChatMessage>>>;
 	private _currentRoomSubscribers: Array<Observer<ChatRoom>>;
+	private _currentUserSubscribers: Array<Observer<User>>;
+	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
+	private _roomsListSubscribers: Array<Observer<Array<any>>>;
+
+	// Subscriptions
+	private _socketSubscriptions: Array<Subscription>;
 
 	constructor(private socketService: SocketService) {
 		// Init values
-		this._currentRoom = undefined;
+		// Data
 		this._chatLog = new Array();
+		this._currentRoom = undefined;
 		this._currentUser = undefined;
-		this._socketSubscriptions = new Array();
+		this._roomsList = new Array();
+
+		// Subcriber/Observer Arrays
 		this._chatLogSubscribers = new Array();
 		this._currentUserSubscribers = new Array();
 		this._loggedInStatusSubscribers = new Array();
-		this._roomsList = new Array();
 		this._roomsListSubscribers = new Array();
 		this._currentRoomSubscribers = new Array();
+		this._socketSubscriptions = new Array();
 
 		// Init subs
 		this.resetSocketSubs();
 	}
 
-	private _setChatLog(messages: Array<ChatMessage>) {
-		messages.forEach((msg) => {
-			this._chatLog.push(msg);
-		});
-
-		this._chatLogSubscribers.forEach((sub: Observer<Array<ChatMessage>>) => {
-			sub.next(this._chatLog);
-		});
-	}
-
 	// Socket
 	resetSocketSubs(): void {
 		this.unsubscribeAllSocketSubs();
-		let initSub = this.socketService.listen('init').subscribe(({ rooms, devUserJSON }) => {
-			let { name, id } = devUserJSON;
-			this._currentUser = new User(name, id);
-			let parsedRoomsList = this.parseRoomsList(rooms);
-			this.updateRoomsList(parsedRoomsList);
-		});
+		let initSub = this.socketService.listen('init').subscribe((data) => this.handleInit(data));
 		this._socketSubscriptions.push(initSub);
 
-		let roomSub = this.socketService.listen('join').subscribe(({ room, leave }) => {
-			console.log(`JOIN SUB roomID: ${room}`);
-			if (leave) {
-				// leave room
-				this.leaveCurrentRoom();
-			} else if (room) {
-				// join SUCCESS
-				let roomInstance: ChatRoom = this._roomsList.find((rm: ChatRoom) => {
-					rm.getID() == room;
-				});
-				if (roomInstance) this.updateCurrentRoom(roomInstance);
-				else console.log('whoops, that room does not seem to exist...');
-			} else {
-				// join FAIL
-			}
-		});
+		let roomSub = this.socketService.listen('join').subscribe((data) => this.handleJoin(data));
 		this._socketSubscriptions.push(roomSub);
 
-		let messageSub = this.socketService.listen('message').subscribe(({ username, timeStamp, message }) => {
-			if (this._chatLog) this._chatLog.push(new ChatMessage(username, new Date(timeStamp), message));
-		});
+		let messageSub = this.socketService.listen('message').subscribe((data) => this.handleMessage(data));
 		this._socketSubscriptions.push(messageSub);
 
-		// let incomingMessageSub = this.socketService.listen('incomingMessage').subscribe(({ user, date, text }) => {
-		// 	let parsedMessage = new ChatMessage(user, date, text);
-		// 	this._chatLog.push(parsedMessage);
-		// });
-		// this._socketSubscriptions.push(incomingMessageSub);
-
-		// let messageReceivedSub = this.socketService.listen(messageReceived').subscribe(({ user, date, text }) => {
-		// 	let parsedMessage = new ChatMessage(user, date, text);
-		// 	this._chatLog.push(parsedMessage);
-		// });
-		// this._socketSubscriptions.push(messageReceivedSub);
+		let notificationSub = this.socketService.listen('notify').subscribe((data) => this.handleNotification(data));
+		this._socketSubscriptions.push(notificationSub);
 	}
 
+	// Observer callbacks
+	handleInit(data: any) {
+		// TODO unit test
+		let { rooms, devUserJSON } = data;
+		let { name, id } = devUserJSON;
+		this._currentUser = new User(name, id);
+		let parsedRoomsList = this.parseRoomsList(rooms);
+		this.updateRoomsList(parsedRoomsList);
+	}
+
+	handleJoin(data: any) {
+		// TODO unit test
+		let { room, leave } = data;
+		if (leave) {
+			// leave room
+			this.leaveCurrentRoom();
+		} else if (room) {
+			// join SUCCESS
+			let roomInstance: ChatRoom = this._roomsList.find((rm: ChatRoom) => {
+				return rm.getID() == room;
+			});
+			if (roomInstance) this.updateCurrentRoom(roomInstance);
+			else console.log('whoops, that room does not seem to exist...');
+		} else {
+			alert('"join" socket event is invalid');
+		}
+	}
+
+	handleMessage(data: any) {
+		// TODO unit test
+		let { username, timeStamp, message } = data;
+		if (this._chatLog && this._currentRoom)
+			this._chatLog.push(new ChatMessage(username, new Date(timeStamp), message));
+	}
+
+	handleNotification(data: any) {
+		// TODO unit test
+		const { notification, user, message } = data;
+		switch (notification) {
+			case 'error':
+				alert(message);
+				break;
+			case 'leave':
+				this.roomNotifyUserLeft(user);
+				break;
+			case 'join':
+				this.roomNotifyUserJoin(user);
+				break;
+			default:
+				console.log('FAILED TO CATEGORIZE NOTIFICATION');
+				break;
+		}
+	}
+
+	// Notifications
+	roomNotifyUserLeft(username: string) {
+		// TODO unit test
+		this._chatLog.push(
+			new ChatMessage(
+				'Room notification',
+				new Date(),
+				`${username ? username : 'Unknown User'} has left the room.`
+			)
+		);
+	}
+
+	roomNotifyUserJoin(username: string) {
+		// TODO unit test
+		this._chatLog.push(
+			new ChatMessage(
+				'Room notification',
+				new Date(),
+				`${username ? username : 'Unknown User'} has joined the room.`
+			)
+		);
+	}
+
+	// Socket
 	unsubscribeAllSocketSubs() {
 		while (this._socketSubscriptions.length) {
 			this._socketSubscriptions.shift().unsubscribe();
@@ -146,14 +191,16 @@ export class StateService {
 	}
 
 	updateCurrentRoom(room: ChatRoom) {
+		// TODO unit test
 		this._currentRoom = room;
+		this._chatLog = [];
+		this.updateChatLogSubscribers();
 		this.updateCurrentRoomSubscribers();
 	}
 
 	leaveCurrentRoom(): void {
 		this._currentRoom = undefined;
 		this.updateCurrentRoomSubscribers();
-		this.socketService.emit('leave', { user: this._currentUser.getId() });
 	}
 
 	updateCurrentRoomSubscribers(): void {
@@ -251,6 +298,13 @@ export class StateService {
 		return new Observable((subscriber: Observer<any>) => {
 			this._chatLogSubscribers.push(subscriber);
 			subscriber.next(this._chatLog);
+		});
+	}
+
+	updateChatLogSubscribers(): void {
+		// TODO unit test
+		this._chatLogSubscribers.forEach((sub: Observer<Array<ChatMessage>>) => {
+			sub.next(this._chatLog);
 		});
 	}
 

@@ -71,6 +71,14 @@ class User {
 		this.name = name;
 	}
 
+	getName() {
+		return this.name;
+	}
+
+	getID() {
+		return this.id;
+	}
+
 	toJSON() {
 		return { id: this.id, name: this.name };
 	}
@@ -100,6 +108,7 @@ class Room {
 	};
 
 	joinUser = function(userID) {
+		console.log(`User ${userID} has joined ${this.name} (room ID: ${this.id})`);
 		this.users.push(userID);
 	};
 
@@ -171,32 +180,35 @@ let roomsUtility = new RoomsUtility(roomsList);
 // Run when client connects
 io.on('connection', (socket) => {
 	console.log('new user connected');
-	socket.on('join', ({ user, room }) => {
-		console.log(`JOIN ROOM: userID ${user} & roomID ${room}`);
-		let roomInstance = roomsUtility.getRoomByID(room);
-		let userInstance = usersUtility.getUserByID(user);
-		console.log('ROOM INSTANCE', roomInstance, 'USER INSTANCE', userInstance);
-		if (!roomInstance || roomInstance.isFull()) {
-			// room exists and isn't full and user exists
-			roomInstance.joinUser(user);
-			socket.emit('join', { room });
-		} else {
-			socket.join(room);
-			socket.to(room).emit('user', { user: userInstance.toJSON() });
-			socket.emit('join', { room: room });
+	socket.on('join', ({ user, room, leave }) => {
+		if ((user, room)) {
+			let roomInstance = roomsUtility.getRoomByID(room);
+			let userInstance = usersUtility.getUserByID(user);
+			if (leave) {
+				roomsUtility.getRoomByID(room).removeUser(user);
+				socket.emit('join', { leave: true });
+				socket.to(room).emit('notify', { notification: 'leave', user: userInstance.getName() });
+			} else if (!roomInstance || roomInstance.isFull() || !userInstance) {
+				// room is full/doesn't exist or user doesn't exist
+				socket.emit('notify', { notification: 'error', message: 'Failed to join room' });
+			} else {
+				roomInstance.joinUser(user);
+				socket.join(room);
+				socket.to(room).emit('notify', { notification: 'join', user: userInstance.getName() });
+				socket.emit('join', { room: room });
+			}
 		}
 	});
 
 	socket.on('leave', ({ user, room }) => {
 		let roomInstance = roomsUtility.getRoomByID(room);
 		roomInstance.removeUser(user);
-		console.log('user', user, 'has left:', roomInstance.users);
+		// console.log('user', user, 'has left:', roomInstance.users);
 		socket.emit('join', { leave: true });
 	});
 
 	// Listen for message
 	socket.on('message', ({ user, message }) => {
-		// console.log(message);
 		socket.to(user.room).emit('incomingMessage', message);
 		socket.emit('messageReceived', message);
 	});
@@ -205,12 +217,12 @@ io.on('connection', (socket) => {
 	socket.on('disconnect', () => {
 		console.log('user disconnected');
 	});
-	let devUser = usersUtility.getUserByID(dennyID);
+
 	socket.emit('init', {
 		msg: 'hello from the server',
 		// messages: mockChatHistory,
 		rooms: roomsUtility.roomsListJSON(),
-		devUserJSON: devUser.toJSON()
+		devUserJSON: usersUtility.getUserByID(dennyID).toJSON()
 	});
 });
 

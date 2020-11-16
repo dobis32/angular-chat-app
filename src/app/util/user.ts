@@ -11,6 +11,6 @@ export class User {
 	}
 
 	getId(): string {
-		return this.name;
+		return this.id;
 	}
 }
