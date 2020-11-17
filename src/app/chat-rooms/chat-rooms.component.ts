@@ -18,7 +18,7 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		this._subscriptions = new Array();
 	}
 
-	ngOnInit(): void {
+	ngOnInit(): void {		
 		let roomListSub = this.state.roomsList().subscribe((roomsList: Array<any>) => {
 			this._roomsList = roomsList;
 		});
@@ -51,10 +51,12 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	isCurrentRoom(room: ChatRoom): boolean {
-		if (this._currentRoom == undefined) return false;
-		else if (room.getID() == this._currentRoom.getID()) return true;
-		else return false;
+	leaveRoom(): void { // unit test
+		this.state.leaveCurrentRoom();
+	}
+
+	getCurrentRoom(): ChatRoom {
+		return this._currentRoom;
 	}
 
 	_getRoomsList(): Array<any> {

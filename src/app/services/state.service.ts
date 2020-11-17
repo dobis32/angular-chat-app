@@ -66,16 +66,16 @@ export class StateService {
 
 	// Observer callbacks
 	handleInit(data: any) {
-		// TODO unit test
 		let { rooms, devUserJSON } = data;
-		let { name, id } = devUserJSON;
-		this._currentUser = new User(name, id);
+		if(isDevMode()){
+			let { name, id } = devUserJSON;
+			this._currentUser = new User(name, id);
+		} 
 		let parsedRoomsList = this.parseRoomsList(rooms);
 		this.updateRoomsList(parsedRoomsList);
 	}
 
 	handleJoin(data: any) {
-		// TODO unit test
 		let { room, leave } = data;
 		if (leave) {
 			// leave room
@@ -93,18 +93,17 @@ export class StateService {
 	}
 
 	handleMessage(data: any) {
-		// TODO unit test
+		// This has WEAK testing
 		let { username, timeStamp, message } = data;
 		if (this._chatLog && this._currentRoom)
 			this._chatLog.push(new ChatMessage(username, new Date(timeStamp), message));
 	}
 
 	handleNotification(data: any) {
-		// TODO unit test
 		const { notification, user, message } = data;
 		switch (notification) {
 			case 'error':
-				alert(message);
+				this.errorNotify(message);
 				break;
 			case 'leave':
 				this.roomNotifyUserLeft(user);
@@ -120,7 +119,6 @@ export class StateService {
 
 	// Notifications
 	roomNotifyUserLeft(username: string) {
-		// TODO unit test
 		this._chatLog.push(
 			new ChatMessage(
 				'Room notification',
@@ -131,7 +129,6 @@ export class StateService {
 	}
 
 	roomNotifyUserJoin(username: string) {
-		// TODO unit test
 		this._chatLog.push(
 			new ChatMessage(
 				'Room notification',
@@ -139,6 +136,10 @@ export class StateService {
 				`${username ? username : 'Unknown User'} has joined the room.`
 			)
 		);
+	}
+
+	errorNotify(errorMessage: string) {
+		alert(errorMessage);
 	}
 
 	// Socket
@@ -191,9 +192,8 @@ export class StateService {
 	}
 
 	updateCurrentRoom(room: ChatRoom) {
-		// TODO unit test
 		this._currentRoom = room;
-		this._chatLog = [];
+		this.resetChatLog();
 		this.updateChatLogSubscribers();
 		this.updateCurrentRoomSubscribers();
 	}
@@ -233,7 +233,9 @@ export class StateService {
 		let parsedList = new Array();
 		unparsedList.forEach(({ id, name, capacity, users, password }) => {
 			try {
-				parsedList.push(new ChatRoom(id, name, capacity, users, password));
+				if(!id || !name || !capacity) throw new Error('Failed to parse room; one or more required parameters is invalid')
+				let rm = new ChatRoom(id, name, capacity, users, password);
+				parsedList.push(rm);
 			} catch (error) {
 				console.log(error);
 			}
@@ -246,6 +248,14 @@ export class StateService {
 		if (isDevMode()) return this._roomsList;
 		else {
 			console.log('Sorry _getRoomsList() is only available in dev mode');
+			return undefined;
+		}
+	}
+
+	_setRoomsList(rooms: Array<ChatRoom>) {
+		if (isDevMode()) this._roomsList = rooms;
+		else {
+			console.log('Sorry _setRoomsList() is only available in dev mode');
 			return undefined;
 		}
 	}
@@ -302,16 +312,27 @@ export class StateService {
 	}
 
 	updateChatLogSubscribers(): void {
-		// TODO unit test
 		this._chatLogSubscribers.forEach((sub: Observer<Array<ChatMessage>>) => {
 			sub.next(this._chatLog);
 		});
+	}
+
+	resetChatLog(): void {
+		this._chatLog = new Array();
 	}
 
 	_getChatLog(): Array<ChatMessage> {
 		if (isDevMode()) return this._chatLog;
 		else {
 			console.log(new Error('ERROR StateService._getChatLog() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_setChatLog(log:  Array<ChatMessage>) {
+		if (isDevMode()) return this._chatLog;
+		else {
+			console.log(new Error('ERROR StateService._setChatLog() is only availabe in dev mode.'));
 			return undefined;
 		}
 	}

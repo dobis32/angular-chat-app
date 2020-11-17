@@ -1,7 +1,10 @@
 <div id="chat-log-container">
     <div id="chat-container">
         <h3>Chat:</h3>
-        <div *ngIf="getCurrentRoom()" id="messages-container">
+        <div *ngIf="!getCurrentRoom()" id="messages-container">
+            <h1>no current room...</h1>
+        </div>
+        <div  *ngIf="getCurrentRoom()">
             <app-chat-message *ngFor="let msg of getChatMessages();" [messageBuffer]="msg"></app-chat-message>
         </div>
     </div>

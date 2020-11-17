@@ -8,6 +8,7 @@ import { Subscription } from 'rxjs';
 import { ChatRoom } from '../util/chatRoom';
 import { User } from '../util/user';
 import { hostViewClassName } from '@angular/compiler';
+import { isRegExp } from 'util';
 
 describe('StateService', () => {
 	let service: StateService;
@@ -83,23 +84,100 @@ describe('StateService', () => {
 		expect(unsubSpy).toHaveBeenCalled();
 	});
 
-	// it('should add ChatMessages received from the "incomingMessage" socket event to the ChatLog', () => {
-	// 	let initMessageCount = service._getChatLog().length;
-	// 	let socket: Socket = service._getSocketService();
+	// Socket Event Handlers
+	it('shoulld have a function that handles "init" socket event', () => {
+		let parseSpy = spyOn(service, 'parseRoomsList').and.callThrough();
+		let updateRoomsSpy = spyOn(service, 'updateRoomsList').and.callThrough();
+		let unparsedRoomsList = [{ id: 'id1', name: 'denny', capacity: 6}, { id: 'id2', name: 'hugh', capacity: 4}];
+		let devUserJSON = {id: 'id', name: 'denny'};
 
-	// 	socket.trigger('incomingMessage', new ChatMessage('Test', new Date(), 'Hello there'));
+		service.handleInit({rooms: unparsedRoomsList, devUserJSON});
 
-	// 	expect(service._getChatLog().length).toBeGreaterThan(initMessageCount);
-	// });
+		expect(typeof service.handleInit).toEqual('function');
+		expect(parseSpy).toHaveBeenCalled();
+		expect(updateRoomsSpy).toHaveBeenCalled();
+	});
 
-	// it('should add ChatMessages received from the "messageReceived" socket event to the ChatLog', () => {
-	// 	let initMessageCount = service._getChatLog().length;
-	// 	let socket: Socket = service._getSocketService();
+	it('should have a function that handles "join" socket event', () => {
+		expect(typeof service.handleJoin).toEqual('function');
+	});
 
-	// 	socket.trigger('messageReceived', new ChatMessage('Test', new Date(), 'Hello there'));
+	it('should leave the current room when the "join" event handler receives truthy leave data', () => {
+		let data = { leave: true };
+		let leaveFnSpy = spyOn(service, 'leaveCurrentRoom').and.callThrough();
 
-	// 	expect(service._getChatLog().length).toBeGreaterThan(initMessageCount);
-	// });
+		service.handleJoin(data);
+		delete data.leave;
+		service.handleJoin(data);
+
+		expect(leaveFnSpy).toHaveBeenCalledTimes(1);
+	});
+
+	it('should look for and attempt to join target ChatRoom if truthy room ID and falsy "leave" data is received', () => {
+		let updateSpy = spyOn(service, 'updateCurrentRoom').and.callThrough();
+		let data = {room: 'roomID'}
+
+		service._setRoomsList([new ChatRoom('roomID', 'name', 6)])
+		service.handleJoin(data);
+
+		expect(updateSpy).toHaveBeenCalled();
+	});
+
+	it('should have a fnction to handle the "message" socket event', () => {
+		expect(typeof service.handleMessage).toEqual('function');
+	});
+
+	it('should have a function for handling the "notification" socket event', () => {
+		expect(typeof service.handleNotification).toEqual('function');
+	});
+
+	it('should handle an "error" notifcation appropriately', () => {
+		let errorSpy = spyOn(service, 'errorNotify').and.callFake(()=>{});
+		let errorData = { notification: 'error', message: 'some error' };
+		service.handleNotification(errorData)
+		expect(errorSpy).toHaveBeenCalledWith(errorData.message);
+	});
+
+	it('should handle a "leave" notification appropriately', () => {
+		let leaveSpy = spyOn(service, 'roomNotifyUserLeft').and.callFake(()=>{});
+		let leaveData = { notification: 'leave', user: 'denny'};
+		service.roomNotifyUserLeft(leaveData.user);
+		expect(leaveSpy).toHaveBeenCalledWith(leaveData.user);
+	});
+
+	it('should handle a "join" notification appropriately', () => {
+		let joinNotifySpy = spyOn(service, 'roomNotifyUserJoin').and.callFake(()=>{});
+		let joinData = {notification: 'join', user: 'denny'};
+		service.handleNotification(joinData);
+		expect(joinNotifySpy).toHaveBeenCalledWith(joinData.user);
+	});
+
+	// Notification handlers
+	it('should have a function to handle "leave" notifications', () => {
+		let pushSpy = spyOn(service._getChatLog(), 'push').and.callThrough();
+		let username = 'user';
+
+		service.roomNotifyUserLeft(username);
+
+		expect(typeof service.roomNotifyUserLeft).toEqual('function');
+		expect(pushSpy).toHaveBeenCalled();
+	});
+
+	it('should have a function to handle "join" notifications', () => {
+		let pushSpy = spyOn(service._getChatLog(), 'push').and.callThrough();
+		let username = 'user';
+
+		service.roomNotifyUserJoin(username);
+
+		expect(typeof service.roomNotifyUserJoin).toEqual('function');
+		expect(pushSpy).toHaveBeenCalled();
+	});
+
+	it('should have a function to handle "error" notifications', () => {
+		expect(typeof service.errorNotify).toEqual('function');
+	});
+
+
 
 	// Chat Rooms
 	it('should have an array for holding data about available chat rooms', () => {
@@ -156,15 +234,32 @@ describe('StateService', () => {
 		expect(Array.isArray(service._getCurrentRoomSubscribers())).toBeTrue();
 	});
 
-	it('should have a funciton for updating the current ChatRoom and updates current ChatRoom subscribers', () => {
-		let spy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
+	it('should have a function for updating the current room that also resets the chat log array', () => {
+		let updateChatSubsSpy = spyOn(service, 'updateChatLogSubscribers').and.callThrough();
+		let updateCurrentRoomSubsSpy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
+		let initCurrentRoom = service._getCurrentRoom();
+		let d = new Date();
+		service._setChatLog([new ChatMessage('user', d, 'message')]);
+		service.updateCurrentRoom(new ChatRoom('id', 'name', 6));
 
+		expect(typeof service.updateCurrentRoom).toEqual('function');
+		expect(service._getCurrentRoom() == initCurrentRoom).toBeFalse();
+		expect(updateChatSubsSpy).toHaveBeenCalled();
+		expect(updateCurrentRoomSubsSpy).toHaveBeenCalled();
+		expect(service._getChatLog().length).toEqual(0);
+	})
+
+	it('should have a funciton for updating the current ChatRoom, resets the chat log and updates current ChatRoom subscribers', () => {
+		let updateRoomSpy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
+		let	resetChatLogSpy = spyOn(service, 'resetChatLog').and.callThrough();
 		let room = new ChatRoom('id1', 'Room A', 2);
 
 		service.updateCurrentRoom(room);
 
 		expect(typeof service.updateRoomsList).toEqual('function');
-		expect(spy).toHaveBeenCalledWith();
+		expect(updateRoomSpy).toHaveBeenCalled();
+		expect(resetChatLogSpy).toHaveBeenCalled();
+
 	});
 
 	it('should have a function for updating current room subscribers', () => {
@@ -241,6 +336,36 @@ describe('StateService', () => {
 		expect(Array.isArray(parsed)).toBeTrue();
 	});
 
+	it('should be able to parse rooms list data gracefully', () => {
+		let unparsed1 = [
+			{ name: 'name', capacity: 6 },
+			{ id: 'id2', name: 'name', capacity: 6 },
+			{ id: 'id3', name: 'name', capacity: 6 }
+		];
+		
+		let unparsed2 = [
+			{ id: 'id1', name:'name' },
+			{ id: 'id2', name: 'name', capacity: 6 },
+			{ id: 'id3', name: 'name', capacity: 6 }
+		];
+
+		let unparsed3 = [
+			{ id: 'id', capacity: 6 },
+			{ id: 'id', name: 'name', capacity: 6 },
+			{ id: 'id', name: 'name', capacity: 6 }
+		];
+
+		let parsed1 = service.parseRoomsList(unparsed1);
+		let parsed2 = service.parseRoomsList(unparsed2);
+		let parsed3 = service.parseRoomsList(unparsed3);
+
+		expect(parsed1.length).toEqual(2);
+		expect(parsed2.length).toEqual(2);
+		expect(parsed3.length).toEqual(2);
+	});
+
+
+
 	//Chat log
 	it('should have a chat log', () => {
 		expect(Array.isArray(service._getChatLog()));
@@ -270,6 +395,25 @@ describe('StateService', () => {
 
 		expect(Array.isArray(parsedMessages));
 		expect(parsedMessages.length).toEqual(chatMessageData.length);
+	});
+
+	it('should have a function for updating all chat log subscribers', () => {
+		let currentChatLog = service._getChatLog();
+
+		let subscription1 = service.chatLog().subscribe();
+		let subscription2 = service.chatLog().subscribe();
+
+		let obSpy1 = spyOn(service._getChatLogSubscribers()[0], 'next').and.callThrough();
+		let obSpy2 = spyOn(service._getChatLogSubscribers()[1], 'next').and.callThrough();
+
+		service.updateChatLogSubscribers();
+
+		expect(typeof service.updateChatLogSubscribers).toEqual('function');
+		expect(obSpy1).toHaveBeenCalledWith(currentChatLog);
+		expect(obSpy2).toHaveBeenCalledWith(currentChatLog);
+
+		subscription1.unsubscribe();
+		subscription2.unsubscribe();
 	});
 
 	// Chat Message

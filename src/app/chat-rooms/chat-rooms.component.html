@@ -1,4 +1,11 @@
 <div id="chat-rooms-container">
-    <h3>Rooms:</h3>
-    <div *ngFor="let room of getRoomsList();" [class:current-room]="isCurrentRoom(room)" (click)="joinRoom(room)" class="chat-room-listing">{{room.getName()}} {{room.getUsers().length}}/{{room.getCapacity()}}</div>
+    <div *ngIf="currentRoom()"> <!-- inactive room -->
+        <h3>Rooms:</h3>
+        <div *ngFor="let room of getRoomsList();" (click)="joinRoom(room)" class="chat-room-listing">{{room.getName()}} {{room.getUsers().length}}/{{room.getCapacity()}}</div>
+    </div>
+    <div>
+        <div id="leave-room-button" (click)="leaveRoom()">Leave</div>
+        <h3>{{getCurrentRoom().getName()}}</h3>
+        <div *ngFor="let user of getCurrentRoom().getUsers()">{{user.getName()}}</div>
+    </div>
 </div>
