@@ -107,17 +107,21 @@ class Room {
 		return this.password.length ? true : false;
 	};
 
-	joinUser = function(userID) {
-		console.log(`User ${userID} has joined ${this.name} (room ID: ${this.id})`);
-		this.users.push(userID);
-	};
-
-	removeUser = function(userID) {
+	removeUser(userID) {
 		let temp = [];
+		console.log('user to remove', userID);
+		console.log('USERS', this.users)
+
 		this.users.forEach((user) => {
 			if (user.getID() != userID) temp.push(user);
 		});
 		this.users = temp;
+		console.log('users after removal', this.users);
+	};
+
+	joinUser = function(userID) {
+		console.log(`User ${userID} has joined ${this.name} (room ID: ${this.id})`);
+		this.users.push(userID);
 	};
 
 	toJSON = function() {
@@ -137,22 +141,6 @@ class Room {
 		return json;
 	};
 }
-
-// const botName = 'ChatCord Bot';
-// let userData1 = { name: 'Denny Dingus', id: getNonce() };
-// let userData2 = { name: 'Hugh Jass', id: getNonce() };
-// let mockChatHistory = [
-// 	{
-// 		user: user1.name,
-// 		dateString: new Date().toDateString(),
-// 		text: 'Hi there'
-// 	},
-// 	{
-// 		user: user2.name,
-// 		dateString: new Date().toDateString(),
-// 		text: 'Hello, Denny'
-// 	}
-// ];
 
 let usersList = [ denny, 'Hugh Jass' ];
 
@@ -180,15 +168,12 @@ let roomsUtility = new RoomsUtility(roomsList);
 // Run when client connects
 io.on('connection', (socket) => {
 	console.log('new user connected');
-	socket.on('join', ({ user, room, leave }) => {
-		if ((user, room)) {
+
+	socket.on('join', ({ user, room }) => {
+		if (user && room) {
 			let roomInstance = roomsUtility.getRoomByID(room);
 			let userInstance = usersUtility.getUserByID(user);
-			if (leave) {
-				roomsUtility.getRoomByID(room).removeUser(user);
-				socket.emit('join', { leave: true });
-				socket.to(room).emit('notify', { notification: 'leave', user: userInstance.getName() });
-			} else if (!roomInstance || roomInstance.isFull() || !userInstance) {
+			if (!roomInstance || roomInstance.isFull() || !userInstance) {
 				// room is full/doesn't exist or user doesn't exist
 				socket.emit('notify', { notification: 'error', message: 'Failed to join room' });
 			} else {
@@ -201,16 +186,24 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('leave', ({ user, room }) => {
-		let roomInstance = roomsUtility.getRoomByID(room);
-		roomInstance.removeUser(user);
-		// console.log('user', user, 'has left:', roomInstance.users);
-		socket.emit('join', { leave: true });
+		if(user, room) {
+			console.log(`USER [${user}] LEAVING ROOM [${room}]`);
+			let roomInstance = roomsUtility.getRoomByID(room);
+			let userInstance = usersUtility.getUserByID(user);
+			roomInstance.removeUser(user);
+			socket.leave(room);
+			socket.emit('join', { room: undefined });
+			socket.to(room).emit('notify', { notification: 'leave', user: userInstance.getName() });
+		}
 	});
 
 	// Listen for message
-	socket.on('message', ({ user, message }) => {
-		socket.to(user.room).emit('incomingMessage', message);
-		socket.emit('messageReceived', message);
+	socket.on('message', (data) => {
+		console.log('Incoming message', data);
+		let { user, date, text, room } = data;
+		// let userInstance
+		socket.to(room).emit('message', {user, date, text});
+		socket.emit('message', {user, date, text});
 	});
 
 	// Runs when client disconnects

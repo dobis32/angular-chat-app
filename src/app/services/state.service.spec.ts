@@ -102,18 +102,16 @@ describe('StateService', () => {
 		expect(typeof service.handleJoin).toEqual('function');
 	});
 
-	it('should leave the current room when the "join" event handler receives truthy leave data', () => {
-		let data = { leave: true };
+	it('should leave the current room when the "join" event handler receives undefined room data', () => {
+		let data = { room: undefined };
 		let leaveFnSpy = spyOn(service, 'leaveCurrentRoom').and.callThrough();
 
-		service.handleJoin(data);
-		delete data.leave;
 		service.handleJoin(data);
 
 		expect(leaveFnSpy).toHaveBeenCalledTimes(1);
 	});
 
-	it('should look for and attempt to join target ChatRoom if truthy room ID and falsy "leave" data is received', () => {
+	it('should look for and attempt to join target ChatRoom if room ID is received', () => {
 		let updateSpy = spyOn(service, 'updateCurrentRoom').and.callThrough();
 		let data = {room: 'roomID'}
 

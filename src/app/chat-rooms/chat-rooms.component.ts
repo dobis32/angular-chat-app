@@ -2,6 +2,8 @@ import { Component, OnInit, Input, isDevMode, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { StateService } from '../services/state.service';
 import { ChatRoom } from '../util/chatRoom';
+import { User } from '../util/user';
+
 @Component({
 	selector: 'app-chat-rooms',
 	templateUrl: './chat-rooms.component.html',
@@ -57,6 +59,10 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 
 	getCurrentRoom(): ChatRoom {
 		return this._currentRoom;
+	}
+
+	getUsersInCurrentRoom(): Array<User> {
+		return this._currentRoom.getUsers();
 	}
 
 	_getRoomsList(): Array<any> {

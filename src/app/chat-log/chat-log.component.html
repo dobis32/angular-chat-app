@@ -8,7 +8,7 @@
             <app-chat-message *ngFor="let msg of getChatMessages();" [messageBuffer]="msg"></app-chat-message>
         </div>
     </div>
-    <div id="chat-form-container">
+    <div *ngIf="getCurrentRoom()" id="chat-form-container">
         <form [formGroup]="getChatForm()" (ngSubmit)="sendChatMessage(getChatForm())">
             <textarea name="message" formControlName="message"></textarea>
             <button>Send</button>

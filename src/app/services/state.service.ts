@@ -70,17 +70,15 @@ export class StateService {
 		if(isDevMode()){
 			let { name, id } = devUserJSON;
 			this._currentUser = new User(name, id);
+			this.updateCurrentUserSubscribers();
 		} 
 		let parsedRoomsList = this.parseRoomsList(rooms);
 		this.updateRoomsList(parsedRoomsList);
 	}
 
 	handleJoin(data: any) {
-		let { room, leave } = data;
-		if (leave) {
-			// leave room
-			this.leaveCurrentRoom();
-		} else if (room) {
+		let { room } = data;
+		 if (room) {
 			// join SUCCESS
 			let roomInstance: ChatRoom = this._roomsList.find((rm: ChatRoom) => {
 				return rm.getID() == room;
@@ -88,15 +86,16 @@ export class StateService {
 			if (roomInstance) this.updateCurrentRoom(roomInstance);
 			else console.log('whoops, that room does not seem to exist...');
 		} else {
-			alert('"join" socket event is invalid');
+			this.leaveCurrentRoom();
 		}
 	}
 
 	handleMessage(data: any) {
+		console.log('INCOMING MESSAGE', data);
 		// This has WEAK testing
-		let { username, timeStamp, message } = data;
+		let { user, date, text } = data;
 		if (this._chatLog && this._currentRoom)
-			this._chatLog.push(new ChatMessage(username, new Date(timeStamp), message));
+			this._chatLog.push(new ChatMessage(user, new Date(date), text));
 	}
 
 	handleNotification(data: any) {
@@ -199,6 +198,7 @@ export class StateService {
 	}
 
 	leaveCurrentRoom(): void {
+		this.socketService.emit('leave', {user: this._currentUser.getId(), room: this._currentRoom.getID()})
 		this._currentRoom = undefined;
 		this.updateCurrentRoomSubscribers();
 	}
@@ -348,7 +348,7 @@ export class StateService {
 	// Messages
 	async sendMessage(message: ChatMessage): Promise<boolean> {
 		try {
-			await this.socketService.emit('message', message.toJSON());
+			await this.socketService.emit('message', { ...message.toJSON(), room: this._currentRoom.getID()});
 			return true;
 		} catch (error) {
 			console.log('ERROR SENDING MESSAGE -- ', error.message);
