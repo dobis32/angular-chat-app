@@ -1,7 +1,6 @@
 import { Injectable, isDevMode } from '@angular/core';
 import * as io from 'socket.io-client';
 import { Observable, Subscriber } from 'rxjs';
-import { first } from 'rxjs/operators';
 import { Socket } from '../util/socket.interface';
 
 @Injectable({
@@ -34,14 +33,13 @@ export class SocketService implements Socket {
 	}
 
 	emit(eventName: string, data: any) {
-		return new Promise((resolve, reject) => {
-			try {
-				this.socket.emit(eventName, data);
-				resolve(true);
-			} catch (error) {
-				reject(error);
-			}
-		});
+		try {
+			this.socket.emit(eventName, data);
+			return true;
+		} catch (error) {
+			console.log(error);
+			return false;
+		}
 	}
 
 	trigger(): boolean {

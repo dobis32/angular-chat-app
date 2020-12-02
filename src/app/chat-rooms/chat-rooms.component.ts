@@ -20,7 +20,7 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		this._subscriptions = new Array();
 	}
 
-	ngOnInit(): void {		
+	ngOnInit(): void {
 		let roomListSub = this.state.roomsList().subscribe((roomsList: Array<any>) => {
 			this._roomsList = roomsList;
 		});
@@ -40,20 +40,21 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		return this._roomsList;
 	}
 
-	async joinRoom(room: ChatRoom) {
+	joinRoom(room: ChatRoom) {
 		try {
 			if (room.getCapacity() == room.getUsers().length) throw new Error();
 			if (room.getPassword().length) {
 				alert('implement modal to enter password');
 			}
-			let result = await this.state.joinRoom(room.getID());
+			let result = this.state.joinRoom(room.getRoomID());
 			if (!result) throw new Error();
 		} catch (error) {
 			alert('Failed to join room. Room is either at capacity or something else went wrong on the server-side.');
 		}
 	}
 
-	leaveRoom(): void { // unit test
+	leaveRoom(): void {
+		// unit test
 		this.state.leaveCurrentRoom();
 	}
 

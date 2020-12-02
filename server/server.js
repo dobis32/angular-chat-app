@@ -49,30 +49,42 @@ class RoomsUtility {
 }
 
 class UsersUtility {
-	usersMap;
+	users;
 	constructor(usersListData) {
-		this.usersMap = {};
-		usersListData.forEach((name) => {
-			let user = new User(name);
-			this.usersMap[user.id] = user;
+		this.users = [];
+		usersListData.forEach(({ name, password }) => {
+			let user = new User(name, password);
+			this.users.push(user);
 		});
 	}
 
 	getUserByID(id) {
-		return this.usersMap[id];
+		return this.users.find((user) => user.getID() == id);
+	}
+
+	loginUser(username, password) {
+		let user = this.users.find((user) => user.getName() == username && user.getPassword() == password);
+		if (user) return user;
+		else return false;
 	}
 }
 
 class User {
 	id;
 	name;
-	constructor(name) {
+	password;
+	constructor(name, password) {
 		this.id = name == denny ? dennyID : getNonce();
 		this.name = name;
+		this.password = password;
 	}
 
 	getName() {
 		return this.name;
+	}
+
+	getPassword() {
+		return this.password;
 	}
 
 	getID() {
@@ -99,32 +111,32 @@ class Room {
 		this.users = users;
 	}
 
-	isFull = function() {
+	getID() {
+		return this.id;
+	}
+
+	isFull() {
 		return this.users.length == this.capacity ? true : false;
-	};
+	}
 
-	isPrivate = function() {
+	isPrivate() {
 		return this.password.length ? true : false;
-	};
+	}
 
-	removeUser(userID) {
+	removeUser(idToRemove) {
 		let temp = [];
-		console.log('user to remove', userID);
-		console.log('USERS', this.users)
 
-		this.users.forEach((user) => {
-			if (user.getID() != userID) temp.push(user);
+		this.users.forEach((userID) => {
+			if (userID != idToRemove) temp.push(userID);
 		});
 		this.users = temp;
-		console.log('users after removal', this.users);
-	};
+	}
 
-	joinUser = function(userID) {
-		console.log(`User ${userID} has joined ${this.name} (room ID: ${this.id})`);
+	joinUser(userID) {
 		this.users.push(userID);
-	};
+	}
 
-	toJSON = function() {
+	toJSON() {
 		let userJSONData = [];
 		this.users.forEach((userID) => {
 			let user = usersUtility.getUserByID(userID);
@@ -139,10 +151,10 @@ class Room {
 			users: userJSONData
 		};
 		return json;
-	};
+	}
 }
 
-let usersList = [ denny, 'Hugh Jass' ];
+let usersList = [ { name: 'denny', password: 'red123' }, { name: 'hugh', password: 'blue456' } ];
 
 let roomsList = [
 	{
@@ -171,6 +183,7 @@ io.on('connection', (socket) => {
 
 	socket.on('join', ({ user, room }) => {
 		if (user && room) {
+			console.log(`USER [${user}] JOINING ROOM [${room}]`);
 			let roomInstance = roomsUtility.getRoomByID(room);
 			let userInstance = usersUtility.getUserByID(user);
 			if (!roomInstance || roomInstance.isFull() || !userInstance) {
@@ -180,21 +193,31 @@ io.on('connection', (socket) => {
 				roomInstance.joinUser(user);
 				socket.join(room);
 				socket.to(room).emit('notify', { notification: 'join', user: userInstance.getName() });
-				socket.emit('join', { room: room });
+				io.emit('roomsUpdate', roomsUtility.roomsListJSON());
+				socket.emit('join', { id: roomInstance.getID() });
 			}
 		}
 	});
 
 	socket.on('leave', ({ user, room }) => {
-		if(user, room) {
+		if ((user, room)) {
 			console.log(`USER [${user}] LEAVING ROOM [${room}]`);
 			let roomInstance = roomsUtility.getRoomByID(room);
 			let userInstance = usersUtility.getUserByID(user);
 			roomInstance.removeUser(user);
 			socket.leave(room);
-			socket.emit('join', { room: undefined });
+			socket.emit('join', { id: undefined });
 			socket.to(room).emit('notify', { notification: 'leave', user: userInstance.getName() });
+			io.emit('roomsUpdate', roomsUtility.roomsListJSON());
 		}
+	});
+
+	socket.on('login', (data) => {
+		console.log('login event', data);
+		let { username, password } = data;
+		let user = usersUtility.loginUser(username, password);
+		if (user) socket.emit('login', { ...user.toJSON() });
+		else socket.emit('login', { failed: true });
 	});
 
 	// Listen for message
@@ -202,8 +225,8 @@ io.on('connection', (socket) => {
 		console.log('Incoming message', data);
 		let { user, date, text, room } = data;
 		// let userInstance
-		socket.to(room).emit('message', {user, date, text});
-		socket.emit('message', {user, date, text});
+		socket.to(room).emit('message', { user, date, text });
+		socket.emit('message', { user, date, text });
 	});
 
 	// Runs when client disconnects
@@ -214,8 +237,8 @@ io.on('connection', (socket) => {
 	socket.emit('init', {
 		msg: 'hello from the server',
 		// messages: mockChatHistory,
-		rooms: roomsUtility.roomsListJSON(),
-		devUserJSON: usersUtility.getUserByID(dennyID).toJSON()
+		rooms: roomsUtility.roomsListJSON()
+		// devUserJSON: usersUtility.getUserByID(dennyID).toJSON()
 	});
 });
 

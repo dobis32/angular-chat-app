@@ -104,7 +104,7 @@ describe('ChatRoomsComponent', () => {
 
 	it('should have a function that calls the "joinRoom" function of the StateService', () => {
 		let joinSpy = spyOn(chatRoomsComponent.state, 'joinRoom').and.callFake((roomName: string) => {
-			return Promise.resolve(true);
+			return true;
 		});
 		let room = new ChatRoom('id1', 'test', 6);
 

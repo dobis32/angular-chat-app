@@ -15,11 +15,15 @@ export class ChatRoom {
 		this._password = password ? password : '';
 	}
 
+	userJoin(user: User) {
+		this._users.push(user);
+	}
+
 	isPrivate(): boolean {
 		return this._password.length ? true : false;
 	}
 
-	getID(): string {
+	getRoomID(): string {
 		return this._id;
 	}
 

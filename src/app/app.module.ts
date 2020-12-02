@@ -7,9 +7,10 @@ import { ChatMessageComponent } from './chat-message/chat-message.component';
 import { LoginComponent } from './login/login.component';
 import { ChatLogComponent } from './chat-log/chat-log.component';
 import { ChatRoomsComponent } from './chat-rooms/chat-rooms.component';
+import { StateDisplayComponent } from './dev/state-display/state-display.component';
 
 @NgModule({
-	declarations: [ AppComponent, ChatMessageComponent, LoginComponent, ChatLogComponent, ChatRoomsComponent ],
+	declarations: [ AppComponent, ChatMessageComponent, LoginComponent, ChatLogComponent, ChatRoomsComponent, StateDisplayComponent ],
 	imports: [ BrowserModule, AppRoutingModule, FormsModule, ReactiveFormsModule ],
 	providers: [],
 	bootstrap: [ AppComponent ]

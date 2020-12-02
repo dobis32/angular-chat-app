@@ -13,10 +13,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
 	ngOnInit(): void {
 		this.loggedInSub = this.state.loggedInStatus().subscribe((status) => {
-			// this.loggedInBool = status;
-			this.loggedInBool = true;
+			this.loggedInBool = status;
+			// this.loggedInBool = true;
 		});
-		this.state.login('Denny Dingus', 'pw');
+		// this.state.login('Denny Dingus', 'pw');
 	}
 
 	ngOnDestroy(): void {

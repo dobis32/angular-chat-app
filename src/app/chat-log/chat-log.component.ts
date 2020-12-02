@@ -15,10 +15,12 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 	@Input() state: StateService;
 	private chatMessages: Array<ChatMessage>;
 	private chatForm: FormGroup;
-	chatError: boolean;
 	private currentUser: User;
 	private localSubscriptions: Array<Subscription>;
 	private currentRoom: ChatRoom;
+
+	chatError: boolean;
+	currentRoomBool: boolean;
 
 	constructor(private formBuilder: FormBuilder) {
 		this.chatError = false;
@@ -28,6 +30,8 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 
 		this.chatMessages = new Array();
 		this.localSubscriptions = new Array();
+
+		this.currentRoomBool = false;
 	}
 
 	ngOnInit() {
@@ -38,12 +42,13 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 
 		let userSub = this.state.currentUser().subscribe((user: User) => {
 			console.log('user sub', user);
-			this.currentUser = user; 
+			this.currentUser = user;
 		});
 		this.localSubscriptions.push(userSub);
 
 		let chatRoomSub = this.state.currentRoom().subscribe((room: ChatRoom) => {
 			this.currentRoom = room;
+			this.currentRoomBool = room ? true : false;
 		});
 		this.localSubscriptions.push(chatRoomSub);
 	}
@@ -70,11 +75,11 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 		return this.currentRoom;
 	}
 
-	async sendChatMessage(fg: FormGroup) {
+	sendChatMessage(fg: FormGroup) {
 		try {
 			if (!fg.valid) throw new Error('ERROR message was invalid!');
 			let message = new ChatMessage(this.currentUser.getName(), new Date(), fg.value.message);
-			let result = await this.state.sendMessage(message);
+			let result = this.state.sendMessage(message);
 			if (result) {
 				this.chatError = false;
 				fg.reset();
@@ -116,5 +121,10 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 	_setLocalSubscriberArray(localSubs: Array<Subscription>) {
 		if (isDevMode()) this.localSubscriptions = localSubs;
 		else console.log(new Error('ERROR _getLocalSubscriberArray() is only available in dev mode'));
+	}
+
+	_setCurrentUser(user: User) {
+		if (isDevMode()) this.currentUser = user;
+		else console.log(new Error('ERROR _setCurrentUser() is only available in dev mode'));
 	}
 }

@@ -133,46 +133,4 @@ describe('ChatLogComponent', () => {
 
 		expect(unsubLocalSubsSpy).toHaveBeenCalled();
 	});
-
-	// Sending messages
-	// it('should have a function for sending messages through the StateService', async () => {
-	// 	let messageToSend = 'Hello';
-	// 	let stateSendMessageSpy = spyOn(chatLogComponent.state, 'sendMessage').and.callFake(() => {
-	// 		return Promise.resolve(true);
-	// 	});
-
-	// 	chatLogComponent.state._setUser(new User('Denny Dingus', 'some_nonce'));
-	// 	chatLogComponent.getChatForm().setValue({ message: messageToSend });
-	// 	await chatLogComponent.sendChatMessage(chatLogComponent.getChatForm());
-
-	// 	expect(typeof chatLogComponent.sendChatMessage).toEqual('function');
-	// 	expect(stateSendMessageSpy).toHaveBeenCalled();
-	// });
-
-	// it('should reset the formgroup passed to the sendChatMessage function when said function is called', async () => {
-	// 	let messageToSend = 'Hello';
-	// 	let resetSpy = spyOn(chatLogComponent.getChatForm(), 'reset').and.callThrough();
-	// 	spyOn(chatLogComponent.state, 'sendMessage').and.callFake((msg: ChatMessage) => {
-	// 		return Promise.resolve(true);
-	// 	});
-
-	// 	chatLogComponent.getChatForm().setValue({ message: messageToSend });
-	// 	await chatLogComponent.sendChatMessage(chatLogComponent.getChatForm());
-
-	// 	expect(resetSpy).toHaveBeenCalled();
-	// });
-
-	it('should display a message on the DOM if a chat message fails to send', async () => {
-		let messageToSend = 'Hello';
-		spyOn(chatLogComponent.state, 'sendMessage').and.callFake((msg: ChatMessage) => {
-			return Promise.resolve(false);
-		});
-
-		chatLogComponent.getChatForm().setValue({ message: messageToSend });
-		await chatLogComponent.sendChatMessage(chatLogComponent.getChatForm());
-		hostFixture.detectChanges();
-
-		expect(chatLogComponent.chatError).toBeTrue();
-		expect(chatLogDebugElement.query(By.css('#chat-error-message'))).toBeTruthy();
-	});
 });

@@ -1,14 +1,14 @@
 <div id="chat-log-container">
     <div id="chat-container">
         <h3>Chat:</h3>
-        <div *ngIf="!getCurrentRoom()" id="messages-container">
+        <div *ngIf="!currentRoomBool" id="messages-container">
             <h1>no current room...</h1>
         </div>
-        <div  *ngIf="getCurrentRoom()">
+        <div  *ngIf="currentRoomBool">
             <app-chat-message *ngFor="let msg of getChatMessages();" [messageBuffer]="msg"></app-chat-message>
         </div>
     </div>
-    <div *ngIf="getCurrentRoom()" id="chat-form-container">
+    <div *ngIf="currentRoomBool" id="chat-form-container">
         <form [formGroup]="getChatForm()" (ngSubmit)="sendChatMessage(getChatForm())">
             <textarea name="message" formControlName="message"></textarea>
             <button>Send</button>

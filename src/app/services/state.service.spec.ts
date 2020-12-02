@@ -7,8 +7,6 @@ import { ChatMessage } from '../util/chatMessage';
 import { Subscription } from 'rxjs';
 import { ChatRoom } from '../util/chatRoom';
 import { User } from '../util/user';
-import { hostViewClassName } from '@angular/compiler';
-import { isRegExp } from 'util';
 
 describe('StateService', () => {
 	let service: StateService;
@@ -58,6 +56,14 @@ describe('StateService', () => {
 		expect(listenSpy).toHaveBeenCalledWith('join');
 	});
 
+	it('should listen to the "roomsUpdate" event from the SocketService', () => {
+		let listenSpy = spyOn(service._getSocketService(), 'listen').and.callThrough();
+
+		service.resetSocketSubs();
+
+		expect(listenSpy).toHaveBeenCalledWith('roomsUpdate');
+	});
+
 	it('should have a function to unsubscribe from all socket subscriptions', () => {
 		let subSpies = new Array();
 		service._getSocketSubscriptions().forEach((sub: Subscription) => {
@@ -88,10 +94,10 @@ describe('StateService', () => {
 	it('shoulld have a function that handles "init" socket event', () => {
 		let parseSpy = spyOn(service, 'parseRoomsList').and.callThrough();
 		let updateRoomsSpy = spyOn(service, 'updateRoomsList').and.callThrough();
-		let unparsedRoomsList = [{ id: 'id1', name: 'denny', capacity: 6}, { id: 'id2', name: 'hugh', capacity: 4}];
-		let devUserJSON = {id: 'id', name: 'denny'};
+		let unparsedRoomsList = [ { id: 'id1', name: 'denny', capacity: 6 }, { id: 'id2', name: 'hugh', capacity: 4 } ];
+		let devUserJSON = { id: 'id', name: 'denny' };
 
-		service.handleInit({rooms: unparsedRoomsList, devUserJSON});
+		service.handleInit({ rooms: unparsedRoomsList, devUserJSON });
 
 		expect(typeof service.handleInit).toEqual('function');
 		expect(parseSpy).toHaveBeenCalled();
@@ -103,19 +109,21 @@ describe('StateService', () => {
 	});
 
 	it('should leave the current room when the "join" event handler receives undefined room data', () => {
-		let data = { room: undefined };
+		let data = {};
+		service._setCurrentRoom(new ChatRoom('id', 'name', 6));
+		service._setUser(new User('denny', 'dennyID'));
 		let leaveFnSpy = spyOn(service, 'leaveCurrentRoom').and.callThrough();
 
 		service.handleJoin(data);
 
-		expect(leaveFnSpy).toHaveBeenCalledTimes(1);
+		expect(leaveFnSpy).toHaveBeenCalled();
 	});
 
 	it('should look for and attempt to join target ChatRoom if room ID is received', () => {
 		let updateSpy = spyOn(service, 'updateCurrentRoom').and.callThrough();
-		let data = {room: 'roomID'}
+		let data = { id: 'roomID', name: 'name', capacity: 6 };
 
-		service._setRoomsList([new ChatRoom('roomID', 'name', 6)])
+		service._setRoomsList([ new ChatRoom(data.id, data.name, data.capacity) ]);
 		service.handleJoin(data);
 
 		expect(updateSpy).toHaveBeenCalled();
@@ -130,22 +138,22 @@ describe('StateService', () => {
 	});
 
 	it('should handle an "error" notifcation appropriately', () => {
-		let errorSpy = spyOn(service, 'errorNotify').and.callFake(()=>{});
+		let errorSpy = spyOn(service, 'errorNotify').and.callFake(() => {});
 		let errorData = { notification: 'error', message: 'some error' };
-		service.handleNotification(errorData)
+		service.handleNotification(errorData);
 		expect(errorSpy).toHaveBeenCalledWith(errorData.message);
 	});
 
 	it('should handle a "leave" notification appropriately', () => {
-		let leaveSpy = spyOn(service, 'roomNotifyUserLeft').and.callFake(()=>{});
-		let leaveData = { notification: 'leave', user: 'denny'};
+		let leaveSpy = spyOn(service, 'roomNotifyUserLeft').and.callFake(() => {});
+		let leaveData = { notification: 'leave', user: 'denny' };
 		service.roomNotifyUserLeft(leaveData.user);
 		expect(leaveSpy).toHaveBeenCalledWith(leaveData.user);
 	});
 
 	it('should handle a "join" notification appropriately', () => {
-		let joinNotifySpy = spyOn(service, 'roomNotifyUserJoin').and.callFake(()=>{});
-		let joinData = {notification: 'join', user: 'denny'};
+		let joinNotifySpy = spyOn(service, 'roomNotifyUserJoin').and.callFake(() => {});
+		let joinData = { notification: 'join', user: 'denny' };
 		service.handleNotification(joinData);
 		expect(joinNotifySpy).toHaveBeenCalledWith(joinData.user);
 	});
@@ -175,7 +183,17 @@ describe('StateService', () => {
 		expect(typeof service.errorNotify).toEqual('function');
 	});
 
+	it('should handle a "roomsUpdate" notification appropriately', () => {
+		let parseRoomsListSpy = spyOn(service, 'parseRoomsList').and.callThrough();
+		let updateRoomsListSpy = spyOn(service, 'updateRoomsList').and.callThrough();
+		let roomsData = [ { id: 'id1', name: 'test1', capacity: 6 }, { id: 'id2', name: 'test2', capacity: 6 } ];
 
+		service.handleRoomsUpdate(roomsData);
+
+		expect(typeof service.handleRoomsUpdate).toEqual('function');
+		expect(parseRoomsListSpy).toHaveBeenCalledWith(roomsData);
+		expect(updateRoomsListSpy).toHaveBeenCalled();
+	});
 
 	// Chat Rooms
 	it('should have an array for holding data about available chat rooms', () => {
@@ -237,7 +255,7 @@ describe('StateService', () => {
 		let updateCurrentRoomSubsSpy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
 		let initCurrentRoom = service._getCurrentRoom();
 		let d = new Date();
-		service._setChatLog([new ChatMessage('user', d, 'message')]);
+		service._setChatLog([ new ChatMessage('user', d, 'message') ]);
 		service.updateCurrentRoom(new ChatRoom('id', 'name', 6));
 
 		expect(typeof service.updateCurrentRoom).toEqual('function');
@@ -245,11 +263,11 @@ describe('StateService', () => {
 		expect(updateChatSubsSpy).toHaveBeenCalled();
 		expect(updateCurrentRoomSubsSpy).toHaveBeenCalled();
 		expect(service._getChatLog().length).toEqual(0);
-	})
+	});
 
 	it('should have a funciton for updating the current ChatRoom, resets the chat log and updates current ChatRoom subscribers', () => {
 		let updateRoomSpy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
-		let	resetChatLogSpy = spyOn(service, 'resetChatLog').and.callThrough();
+		let resetChatLogSpy = spyOn(service, 'resetChatLog').and.callThrough();
 		let room = new ChatRoom('id1', 'Room A', 2);
 
 		service.updateCurrentRoom(room);
@@ -257,7 +275,6 @@ describe('StateService', () => {
 		expect(typeof service.updateRoomsList).toEqual('function');
 		expect(updateRoomSpy).toHaveBeenCalled();
 		expect(resetChatLogSpy).toHaveBeenCalled();
-
 	});
 
 	it('should have a function for updating current room subscribers', () => {
@@ -340,9 +357,9 @@ describe('StateService', () => {
 			{ id: 'id2', name: 'name', capacity: 6 },
 			{ id: 'id3', name: 'name', capacity: 6 }
 		];
-		
+
 		let unparsed2 = [
-			{ id: 'id1', name:'name' },
+			{ id: 'id1', name: 'name' },
 			{ id: 'id2', name: 'name', capacity: 6 },
 			{ id: 'id3', name: 'name', capacity: 6 }
 		];
@@ -361,8 +378,6 @@ describe('StateService', () => {
 		expect(parsed2.length).toEqual(2);
 		expect(parsed3.length).toEqual(2);
 	});
-
-
 
 	//Chat log
 	it('should have a chat log', () => {
@@ -415,18 +430,19 @@ describe('StateService', () => {
 	});
 
 	// Chat Message
-	it('should have a public method/function for emitting ChatMessage data to the SocketService', async () => {
+	it('should have a public method/function for emitting ChatMessage data to the SocketService', () => {
 		let emitSpy = spyOn(service._getSocketService(), 'emit').and.callFake((event: string, data: any) => {
-			return Promise.resolve();
+			return true;
 		});
 		let d = new Date();
 		let message = new ChatMessage('foo', d, 'some text');
-
-		await service.sendMessage(message);
+		let room = new ChatRoom('id', 'name', 6);
+		service._setCurrentRoom(room);
+		service.sendMessage(message);
 
 		expect(typeof service.sendMessage).toEqual('function');
 		expect(emitSpy).toHaveBeenCalled();
-		expect(emitSpy).toHaveBeenCalledWith('message', message.toJSON());
+		expect(emitSpy).toHaveBeenCalledWith('message', { ...message.toJSON(), room: room.getRoomID() });
 	});
 
 	// User
@@ -449,13 +465,24 @@ describe('StateService', () => {
 		expect(typeof obs.subscribe).toEqual('function');
 	});
 
+	it('should have a function to make a login attempt by emitting through the socket service', () => {
+		let emitSpy = spyOn(service._getSocketService(), 'emit').and.callFake(({ username, password }) => {});
+		let username = 'username';
+		let password = 'password';
+
+		let result = service.attemptLogin(username, password);
+
+		expect(typeof service.attemptLogin).toEqual('function');
+		expect(emitSpy).toHaveBeenCalledWith('login', { username, password });
+		expect(result).toBeTrue();
+	});
+
 	it('should have a function to log-in a user, which should update current-user subscribers and logged-in status subscribers', () => {
 		let updateCurrentUserSubSpy = spyOn(service, 'updateCurrentUserSubscribers');
 		let updateLoggedInSubSpy = spyOn(service, 'updateLoggedInSubscribers');
-		let result = service.login('denny', 'password');
+		service.login('denny', 'id');
 
 		expect(typeof service.login).toEqual('function');
-		expect(result).toBeTrue();
 		expect(updateCurrentUserSubSpy).toHaveBeenCalled();
 		expect(updateLoggedInSubSpy).toHaveBeenCalled();
 	});
@@ -463,7 +490,7 @@ describe('StateService', () => {
 	it('should have a function to log-out the current user', () => {
 		let updateCurrentUserSubSpy = spyOn(service, 'updateCurrentUserSubscribers');
 		let updateLoggedInSubSpy = spyOn(service, 'updateLoggedInSubscribers');
-		let result = service.login('denny', 'password');
+		let result = service.attemptLogin('denny', 'password');
 
 		service.logout();
 
