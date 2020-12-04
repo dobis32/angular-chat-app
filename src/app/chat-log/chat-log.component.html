@@ -5,7 +5,7 @@
             <h1>no current room...</h1>
         </div>
         <div  *ngIf="currentRoomBool">
-            <app-chat-message *ngFor="let msg of getChatMessages();" [messageBuffer]="msg"></app-chat-message>
+            <app-chat-message *ngFor="let msg of getChatMessages();" [messageBuffer]="msg" [clientMessage]="isClientMessage(msg)"></app-chat-message>
         </div>
     </div>
     <div *ngIf="currentRoomBool" id="chat-form-container">

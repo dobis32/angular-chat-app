@@ -3,7 +3,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { AppComponent } from './app.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { StateService } from './services/state.service';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 describe('AppComponent', () => {
 	let fixture: ComponentFixture<AppComponent>;
 	let app: AppComponent;
@@ -48,16 +48,6 @@ describe('AppComponent', () => {
 		expect(loggedInSubSpy).toHaveBeenCalled();
 	});
 
-	it('should call the function of the StateService that unsubscribes all socket-related subscriptions when it it destroyed', () => {
-		app.ngOnInit();
-
-		let unsubSocketSubsSpy = spyOn(app._getStateService(), 'unsubscribeAllSocketSubs').and.callFake(() => {});
-
-		app.ngOnDestroy();
-
-		expect(unsubSocketSubsSpy).toHaveBeenCalled();
-	});
-
 	it('should have a function that returns the injected StateService', () => {
 		expect(app._getStateService()).toEqual(fixture.debugElement.injector.get(StateService));
 	});
@@ -71,5 +61,46 @@ describe('AppComponent', () => {
 		});
 		app.ngOnInit();
 		expect(app.isLoggedIn()).toEqual(app._getLoggedInBool());
+	});
+
+	it('should have a function for unsubscribing from local subscriptions', () => {
+		expect(typeof app.unsubLocalSubscriptions).toEqual('function');
+	});
+
+	it('should unsubscribe from its logged-in-status subscription when unsubbing from local subscriptions', () => {
+		app._setLoggedInSubscription(new Subscription());
+		let loggedInUnsubSpy = spyOn(app._getLoggedInSubscription(), 'unsubscribe').and.callFake(() => {});
+
+		app.unsubLocalSubscriptions();
+
+		expect(loggedInUnsubSpy).toHaveBeenCalled();
+	});
+
+	it('should have a function for when the window unloads', () => {
+		expect(typeof app.appUnload).toEqual('function');
+	});
+
+	it('should call the "logout" function of the state service when the window unloads', () => {
+		let logoutSpy = spyOn(app._getStateService(), 'logout').and.callFake(() => {});
+
+		app.appUnload();
+
+		expect(logoutSpy).toHaveBeenCalled();
+	});
+
+	it('should call the "unsubLocalSubscriptions" function when the window unloads', () => {
+		let unsubLocalSubsSpy = spyOn(app, 'unsubLocalSubscriptions').and.callFake(() => {});
+
+		app.appUnload();
+
+		expect(unsubLocalSubsSpy).toHaveBeenCalled();
+	});
+
+	it('should unsubscribe from all socket-related subscriptions of the state service when the window unloads', () => {
+		let unsubLocalSubsSpy = spyOn(app._getStateService(), 'unsubscribeAllSocketSubs').and.callFake(() => {});
+
+		app.appUnload();
+
+		expect(unsubLocalSubsSpy).toHaveBeenCalled();
 	});
 });

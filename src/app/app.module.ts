@@ -1,5 +1,5 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { NgModule, isDevMode } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -9,8 +9,18 @@ import { ChatLogComponent } from './chat-log/chat-log.component';
 import { ChatRoomsComponent } from './chat-rooms/chat-rooms.component';
 import { StateDisplayComponent } from './dev/state-display/state-display.component';
 
+let componentDeclarations: Array<any> = [
+	AppComponent,
+	ChatMessageComponent,
+	LoginComponent,
+	ChatLogComponent,
+	ChatRoomsComponent,
+	StateDisplayComponent
+];
+// if (isDevMode()) componentDeclarations.push(StateDisplayComponent);
+
 @NgModule({
-	declarations: [ AppComponent, ChatMessageComponent, LoginComponent, ChatLogComponent, ChatRoomsComponent, StateDisplayComponent ],
+	declarations: [ ...componentDeclarations ],
 	imports: [ BrowserModule, AppRoutingModule, FormsModule, ReactiveFormsModule ],
 	providers: [],
 	bootstrap: [ AppComponent ]

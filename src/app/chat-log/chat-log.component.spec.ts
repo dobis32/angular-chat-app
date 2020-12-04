@@ -72,7 +72,7 @@ describe('ChatLogComponent', () => {
 	it('should, on init, subscribe to the chat log from the StateService and push that subscription to the local subscriptions array', () => {
 		chatLogComponent.unsubLocalSubscriptions();
 
-		let chatLog = [ new ChatMessage('Denny', new Date(), 'hello') ];
+		let chatLog = [ new ChatMessage('Denny', 'DennyID', new Date(), 'hello') ];
 		let initSubCount = chatLogComponent._getLocalSubscriberArray().length;
 		let localSubscribersArraySpy = spyOn(chatLogComponent._getLocalSubscriberArray(), 'push').and.callThrough();
 		let chatLogSubSpy = spyOn(chatLogComponent.state, 'chatLog').and.callFake(() => {
@@ -132,5 +132,22 @@ describe('ChatLogComponent', () => {
 		chatLogComponent.ngOnDestroy();
 
 		expect(unsubLocalSubsSpy).toHaveBeenCalled();
+	});
+
+	it('should have a function that returns true if the ChatMessage argument has a userID that matches the current user and false otherwise', () => {
+		let d = new Date();
+		let username = 'denny';
+		let userID = 'dennyID';
+		let user = new User(username, userID);
+		let userMsg = new ChatMessage(username, userID, d, 'hello world!');
+		let otherMsg = new ChatMessage('other', 'otherID', d, 'goodbye!!!!');
+		chatLogComponent._setCurrentUser(user);
+
+		let result1 = chatLogComponent.isClientMessage(userMsg);
+		let result2 = chatLogComponent.isClientMessage(otherMsg);
+
+		expect(typeof chatLogComponent.isClientMessage).toEqual('function');
+		expect(result1).toBeTrue();
+		expect(result2).toBeFalse();
 	});
 });

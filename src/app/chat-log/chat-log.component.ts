@@ -57,6 +57,10 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 		this.unsubLocalSubscriptions();
 	}
 
+	isClientMessage(msg: ChatMessage): boolean {
+		return msg.getUserID() == this.currentUser.getId();
+	}
+
 	// Functions for the DOM
 	getChatMessages(): Array<ChatMessage> {
 		return this.chatMessages;
@@ -78,7 +82,12 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 	sendChatMessage(fg: FormGroup) {
 		try {
 			if (!fg.valid) throw new Error('ERROR message was invalid!');
-			let message = new ChatMessage(this.currentUser.getName(), new Date(), fg.value.message);
+			let message = new ChatMessage(
+				this.currentUser.getName(),
+				this.currentUser.getId(),
+				new Date(),
+				fg.value.message
+			);
 			let result = this.state.sendMessage(message);
 			if (result) {
 				this.chatError = false;
@@ -90,10 +99,6 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 			console.log(error);
 			this.chatError = true;
 		}
-	}
-
-	messageFromUser() {
-		return false;
 	}
 
 	unsubLocalSubscriptions(): void {

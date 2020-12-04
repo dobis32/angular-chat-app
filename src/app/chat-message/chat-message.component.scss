@@ -1,7 +1,19 @@
-#message-username {
-	padding-left: 20px;
+.user-message {
+	text-align: left;
+	#message-username {
+		padding-left: 20px;
+	}
+	#message-text {
+		padding-left: 40px;
+	}
 }
 
-#message-text {
-	padding-left: 40px;
+.client-message {
+	text-align: right;
+	#message-username {
+		padding-right: 20px;
+	}
+	#message-text {
+		padding-right: 40px;
+	}
 }

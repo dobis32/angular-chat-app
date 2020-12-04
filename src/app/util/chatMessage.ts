@@ -1,10 +1,12 @@
 export class ChatMessage {
 	private user: string;
+	private userID: string;
 	private date: Date;
 	private text: string;
 
-	constructor(user: string, date: Date, text: string) {
+	constructor(user: string, id: string, date: Date, text: string) {
 		this.user = user;
+		this.userID = id;
 		this.date = date;
 		this.text = text;
 	}
@@ -15,6 +17,10 @@ export class ChatMessage {
 
 	setUser(name: string) {
 		this.user = name;
+	}
+
+	getUserID(): string {
+		return this.userID;
 	}
 
 	getDate(): string {
@@ -34,6 +40,6 @@ export class ChatMessage {
 	}
 
 	toJSON(): any {
-		return { user: this.user, date: this.date.toDateString(), text: this.text };
+		return { user: this.user, id: this.userID, date: this.date.toDateString(), text: this.text };
 	}
 }

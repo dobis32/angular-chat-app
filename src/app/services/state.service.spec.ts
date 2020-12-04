@@ -255,7 +255,7 @@ describe('StateService', () => {
 		let updateCurrentRoomSubsSpy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
 		let initCurrentRoom = service._getCurrentRoom();
 		let d = new Date();
-		service._setChatLog([ new ChatMessage('user', d, 'message') ]);
+		service._setChatLog([ new ChatMessage('user', 'someID', d, 'message') ]);
 		service.updateCurrentRoom(new ChatRoom('id', 'name', 6));
 
 		expect(typeof service.updateCurrentRoom).toEqual('function');
@@ -435,7 +435,7 @@ describe('StateService', () => {
 			return true;
 		});
 		let d = new Date();
-		let message = new ChatMessage('foo', d, 'some text');
+		let message = new ChatMessage('foo', 'someID', d, 'some text');
 		let room = new ChatRoom('id', 'name', 6);
 		service._setCurrentRoom(room);
 		service.sendMessage(message);
@@ -487,7 +487,7 @@ describe('StateService', () => {
 		expect(updateLoggedInSubSpy).toHaveBeenCalled();
 	});
 
-	it('should have a function to log-out the current user', () => {
+	it('should have a function to log-out the current user which should update current-user subscribers and logged-in-status subscribers', () => {
 		let updateCurrentUserSubSpy = spyOn(service, 'updateCurrentUserSubscribers');
 		let updateLoggedInSubSpy = spyOn(service, 'updateLoggedInSubscribers');
 		let result = service.attemptLogin('denny', 'password');
@@ -499,5 +499,14 @@ describe('StateService', () => {
 		expect(updateCurrentUserSubSpy).toHaveBeenCalled();
 		expect(updateLoggedInSubSpy).toHaveBeenCalled();
 		expect(service._getCurrentUser()).toBeFalsy();
+	});
+
+	it('should have the current user leave the current room (if any) when user logs out', () => {
+		let leaveRoomSpy = spyOn(service, 'leaveCurrentRoom').and.callThrough();
+
+		service.attemptLogin('denny', 'password');
+		service.logout();
+
+		expect(leaveRoomSpy).toHaveBeenCalled();
 	});
 });

@@ -20,8 +20,24 @@ export class AppComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnDestroy(): void {
-		this.loggedInSub.unsubscribe();
+		this.unsubLocalSubscriptions();
+	}
+
+	appInDevMode(): boolean {
+		return isDevMode();
+	}
+
+	appUnload() {
+		this.state.logout();
+		this.unsubLocalSubscriptions();
 		this.state.unsubscribeAllSocketSubs();
+	}
+
+	unsubLocalSubscriptions() {
+		if (this.loggedInSub) {
+			this.loggedInSub.unsubscribe();
+			this.loggedInSub = undefined;
+		}
 	}
 
 	getStateService(): StateService {
@@ -52,6 +68,14 @@ export class AppComponent implements OnInit, OnDestroy {
 		if (isDevMode()) return this.loggedInSub;
 		else {
 			console.log(new Error('ERROR _getLoggedInSubscription() is only available in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_setLoggedInSubscription(sub: Subscription) {
+		if (isDevMode()) this.loggedInSub = sub;
+		else {
+			console.log(new Error('ERROR _setLoggedInSubscription() is only available in dev mode.'));
 			return undefined;
 		}
 	}

@@ -10,8 +10,8 @@ export class MockSocketService implements Socket {
 	constructor() {
 		this.subscribers = {};
 		this.chatLog = [
-			new ChatMessage('Alice', new Date(), 'Hi Bob!'),
-			new ChatMessage('Bob', new Date(), 'Hello Alice!!')
+			new ChatMessage('Alice', 'AliceID', new Date(), 'Hi Bob!'),
+			new ChatMessage('Bob', 'BobID', new Date(), 'Hello Alice!!')
 		];
 	}
 

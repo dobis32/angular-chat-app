@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, OnDestroy } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
 import { Subscription } from 'rxjs';
 import { User } from 'src/app/util/user';
@@ -9,7 +9,7 @@ import { ChatRoom } from 'src/app/util/chatRoom';
 	templateUrl: './state-display.component.html',
 	styleUrls: [ './state-display.component.scss' ]
 })
-export class StateDisplayComponent implements OnInit {
+export class StateDisplayComponent implements OnInit, OnDestroy {
 	@Input() state: StateService;
 	private subscriptions: Array<Subscription>;
 	private currentUser: User;
@@ -29,6 +29,12 @@ export class StateDisplayComponent implements OnInit {
 			this.currentRoom = room;
 		});
 		this.subscriptions.push(roomSub);
+	}
+
+	ngOnDestroy(): void {
+		this.subscriptions.forEach((sub: Subscription) => {
+			sub.unsubscribe();
+		});
 	}
 
 	getCurrentUser(): any {

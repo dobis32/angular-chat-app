@@ -95,8 +95,8 @@ export class StateService {
 	handleMessage(data: any) {
 		console.log('INCOMING MESSAGE', data);
 		// This has WEAK testing
-		let { user, date, text } = data;
-		if (this._chatLog && this._currentRoom) this._chatLog.push(new ChatMessage(user, new Date(date), text));
+		let { user, id, date, text } = data;
+		if (this._chatLog && this._currentRoom) this._chatLog.push(new ChatMessage(user, id, new Date(date), text));
 	}
 
 	handleNotification(data: any) {
@@ -134,6 +134,7 @@ export class StateService {
 		this._chatLog.push(
 			new ChatMessage(
 				'Room notification',
+				'RoomBot',
 				new Date(),
 				`${username ? username : 'Unknown User'} has left the room.`
 			)
@@ -144,6 +145,7 @@ export class StateService {
 		this._chatLog.push(
 			new ChatMessage(
 				'Room notification',
+				'RoomBot',
 				new Date(),
 				`${username ? username : 'Unknown User'} has joined the room.`
 			)
@@ -318,9 +320,9 @@ export class StateService {
 		let parsedMessages: Array<ChatMessage> = new Array();
 		if (Array.isArray(messages))
 			messages.forEach((notParsed) => {
-				let { user, dateString, text } = notParsed;
+				let { user, id, dateString, text } = notParsed;
 				let date = new Date(dateString);
-				parsedMessages.push(new ChatMessage(user, date, text));
+				parsedMessages.push(new ChatMessage(user, id, date, text));
 			});
 		return parsedMessages;
 	}
@@ -396,6 +398,8 @@ export class StateService {
 	}
 
 	logout() {
+		this.leaveCurrentRoom();
+
 		this._currentUser = undefined;
 		this.updateCurrentUserSubscribers();
 		this.updateLoggedInSubscribers();

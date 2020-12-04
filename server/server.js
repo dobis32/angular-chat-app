@@ -220,13 +220,15 @@ io.on('connection', (socket) => {
 		else socket.emit('login', { failed: true });
 	});
 
+	socket.on('logout', (userID) => {});
+
 	// Listen for message
 	socket.on('message', (data) => {
 		console.log('Incoming message', data);
-		let { user, date, text, room } = data;
+		let { user, id, date, text, room } = data;
 		// let userInstance
-		socket.to(room).emit('message', { user, date, text });
-		socket.emit('message', { user, date, text });
+		socket.to(room).emit('message', { user, id, date, text });
+		socket.emit('message', { user, id, date, text });
 	});
 
 	// Runs when client disconnects

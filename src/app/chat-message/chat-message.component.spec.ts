@@ -12,7 +12,7 @@ import { ChatMessage } from '../util/chatMessage';
 class TestHostComponent {
 	private _chatMessage: ChatMessage;
 	constructor() {
-		this._chatMessage = new ChatMessage('foo', new Date(), 'some text');
+		this._chatMessage = new ChatMessage('foo', 'someID', new Date(), 'some text');
 	}
 
 	_getChatMessage() {
