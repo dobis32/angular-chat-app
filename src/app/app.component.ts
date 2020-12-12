@@ -1,21 +1,26 @@
 import { Component, OnInit, OnDestroy, isDevMode } from '@angular/core';
 import { StateService } from './services/state.service';
-import { Subscription } from 'rxjs';
+import { Subscription, Observable } from 'rxjs';
 @Component({
 	selector: 'app-root',
 	templateUrl: './app.component.html',
 	styleUrls: [ './app.component.scss' ]
 })
 export class AppComponent implements OnInit, OnDestroy {
-	private loggedInSub: Subscription;
+	public modalState: Observable<boolean>;
+	private localSubscriptions: Array<Subscription>;
 	private loggedInBool: boolean;
-	constructor(private state: StateService) {}
+	constructor(private state: StateService) {
+		this.localSubscriptions = new Array();
+	}
 
 	ngOnInit(): void {
-		this.loggedInSub = this.state.loggedInStatus().subscribe((status) => {
+		let loggedInSub = this.state.loggedInStatus().subscribe((status) => {
 			this.loggedInBool = status;
 			// this.loggedInBool = true;
 		});
+		this.localSubscriptions.push(loggedInSub);
+
 		// this.state.login('Denny Dingus', 'pw');
 	}
 
@@ -34,10 +39,7 @@ export class AppComponent implements OnInit, OnDestroy {
 	}
 
 	unsubLocalSubscriptions() {
-		if (this.loggedInSub) {
-			this.loggedInSub.unsubscribe();
-			this.loggedInSub = undefined;
-		}
+		while (this.localSubscriptions.length) this.localSubscriptions.shift().unsubscribe();
 	}
 
 	getStateService(): StateService {
@@ -64,16 +66,16 @@ export class AppComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	_getLoggedInSubscription(): Subscription {
-		if (isDevMode()) return this.loggedInSub;
+	_getLocalSubscriptions(): Array<Subscription> {
+		if (isDevMode()) return this.localSubscriptions;
 		else {
 			console.log(new Error('ERROR _getLoggedInSubscription() is only available in dev mode.'));
 			return undefined;
 		}
 	}
 
-	_setLoggedInSubscription(sub: Subscription) {
-		if (isDevMode()) this.loggedInSub = sub;
+	_setLocalSubscriptions(sub: Array<Subscription>) {
+		if (isDevMode()) this.localSubscriptions = sub;
 		else {
 			console.log(new Error('ERROR _setLoggedInSubscription() is only available in dev mode.'));
 			return undefined;

@@ -41,7 +41,7 @@ describe('AppComponent', () => {
 	it('should unsubscribe from the logged-in status subscription it gets from the StateService when it it destroyed', () => {
 		app.ngOnInit();
 
-		let loggedInSubSpy = spyOn(app._getLoggedInSubscription(), 'unsubscribe').and.callThrough();
+		let loggedInSubSpy = spyOn(app._getLocalSubscriptions()[0], 'unsubscribe').and.callThrough();
 
 		app.ngOnDestroy();
 
@@ -68,8 +68,8 @@ describe('AppComponent', () => {
 	});
 
 	it('should unsubscribe from its logged-in-status subscription when unsubbing from local subscriptions', () => {
-		app._setLoggedInSubscription(new Subscription());
-		let loggedInUnsubSpy = spyOn(app._getLoggedInSubscription(), 'unsubscribe').and.callFake(() => {});
+		app._setLocalSubscriptions([ new Subscription() ]);
+		let loggedInUnsubSpy = spyOn(app._getLocalSubscriptions()[0], 'unsubscribe').and.callFake(() => {});
 
 		app.unsubLocalSubscriptions();
 

@@ -5,7 +5,6 @@ import { StateService } from '../services/state.service';
 import { By } from '@angular/platform-browser';
 import { Subscriber, Observable, Subscription } from 'rxjs';
 import { ChatRoom } from '../util/chatRoom';
-import { ObserveOnOperator } from 'rxjs/internal/operators/observeOn';
 
 @Component({
 	selector: `host-component`,
@@ -80,30 +79,8 @@ describe('ChatRoomsComponent', () => {
 		expect(typeof chatRoomsComponent.joinRoom).toEqual('function');
 	});
 
-	it('should have a function to join a room that checks the capacity of the room before emitting through the SocketService', () => {
-		let roomName = 'testRoom';
-		let room = new ChatRoom('id1', roomName, 6);
-		let capacitySpy = spyOn(room, 'getCapacity').and.callThrough();
-		let usersSpy = spyOn(room, 'getUsers').and.callThrough();
-
-		chatRoomsComponent.joinRoom(room);
-
-		expect(capacitySpy).toHaveBeenCalled();
-		expect(usersSpy).toHaveBeenCalled();
-	});
-
-	it('should have a function to join a room that prompts for a password before emitting through the SocketService', () => {
-		let roomName = 'testRoom';
-		let room = new ChatRoom('id1', roomName, 6);
-		let passwordSpy = spyOn(room, 'getPassword').and.callThrough();
-
-		chatRoomsComponent.joinRoom(room);
-
-		expect(passwordSpy).toHaveBeenCalled();
-	});
-
 	it('should have a function that calls the "joinRoom" function of the StateService', () => {
-		let joinSpy = spyOn(chatRoomsComponent.state, 'joinRoom').and.callFake((roomName: string) => {
+		let joinSpy = spyOn(chatRoomsComponent.state, 'joinRoom').and.callFake((rm: ChatRoom) => {
 			return true;
 		});
 		let room = new ChatRoom('id1', 'test', 6);

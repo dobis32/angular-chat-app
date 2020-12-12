@@ -42,11 +42,7 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 
 	joinRoom(room: ChatRoom) {
 		try {
-			if (room.getCapacity() == room.getUsers().length) throw new Error();
-			if (room.getPassword().length) {
-				alert('implement modal to enter password');
-			}
-			let result = this.state.joinRoom(room.getRoomID());
+			let result = this.state.joinRoom(room);
 			if (!result) throw new Error();
 		} catch (error) {
 			alert('Failed to join room. Room is either at capacity or something else went wrong on the server-side.');

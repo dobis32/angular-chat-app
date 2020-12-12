@@ -300,34 +300,6 @@ describe('StateService', () => {
 		expect(typeof obs.subscribe).toEqual('function');
 	});
 
-	it('should have a function for creating a new room', async () => {
-		let emitSpy = spyOn(service._getSocketService(), 'emit').and.callFake((eventName: string, roomName: string) => {
-			return Promise.resolve();
-		});
-		let newRoom = 'test';
-
-		await service.createRoom(newRoom);
-
-		expect(emitSpy).toHaveBeenCalledWith('createRoom', newRoom);
-	});
-
-	it('should have a function for joining a new room that should emit the "joinRoom" event from the SocketService', async () => {
-		let roomToJoin = 'test';
-		let socketSpy = spyOn(
-			service._getSocketService(),
-			'emit'
-		).and.callFake((eventName: string, roomname: string) => {
-			return Promise.resolve(true);
-		});
-
-		await service.joinRoom(roomToJoin);
-
-		expect(socketSpy).toHaveBeenCalledWith('join', {
-			user: service._getCurrentUser().getId(),
-			room: roomToJoin
-		});
-	});
-
 	it('should have a function to leave the current ChatRoom and update corresponding observers', () => {
 		service._setCurrentRoom(new ChatRoom('id', 'test room', 6, [], ''));
 
@@ -466,7 +438,9 @@ describe('StateService', () => {
 	});
 
 	it('should have a function to make a login attempt by emitting through the socket service', () => {
-		let emitSpy = spyOn(service._getSocketService(), 'emit').and.callFake(({ username, password }) => {});
+		let emitSpy = spyOn(service._getSocketService(), 'emit').and.callFake((eventName: string, credentials: any) => {
+			return true;
+		});
 		let username = 'username';
 		let password = 'password';
 

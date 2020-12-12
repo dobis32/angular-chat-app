@@ -1,6 +1,6 @@
 import { Component, OnInit, Input, OnDestroy, isDevMode } from '@angular/core';
 import { FormGroup, FormBuilder, FormControl, Validators } from '@angular/forms';
-import { Subscription, Subscriber } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { ChatMessage } from '../util/chatMessage';
 import { StateService } from '../services/state.service';
 import { User } from '../util/User';

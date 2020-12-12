@@ -2,9 +2,9 @@ import { Injectable, isDevMode } from '@angular/core';
 import { SocketService } from './socket.service';
 import { Observer, Observable, Subscription, Subscriber } from 'rxjs';
 import { ChatMessage } from '../util/chatMessage';
-import { Socket } from '../util/socket.interface';
 import { ChatRoom } from '../util/chatRoom';
 import { User } from '../util/user';
+import { ModalService } from './modal.service';
 
 let mockUser = new User('Denny Dingus', 'some_nonce');
 
@@ -15,8 +15,9 @@ export class StateService {
 	// Data
 	private _chatLog: Array<ChatMessage>;
 	private _currentRoom: ChatRoom;
-	private _currentUser: User; // TO DO create and implement User class
+	private _currentUser: User;
 	private _roomsList: Array<ChatRoom>;
+	private _modalOpen: boolean;
 
 	// Subcriber/Observer Arrays
 	private _chatLogSubscribers: Array<Observer<Array<ChatMessage>>>;
@@ -24,17 +25,20 @@ export class StateService {
 	private _currentUserSubscribers: Array<Observer<User>>;
 	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
 	private _roomsListSubscribers: Array<Observer<Array<any>>>;
+	private _modalOpenSubscribers: Array<Observer<boolean>>;
 
 	// Subscriptions
 	private _socketSubscriptions: Array<Subscription>;
+	private _modalOpenStateSubscription: Subscription;
 
-	constructor(private socketService: SocketService) {
+	constructor(private socket: SocketService, private modal: ModalService) {
 		// Init values
 		// Data
 		this._chatLog = new Array();
 		this._currentRoom = undefined;
 		this._currentUser = undefined;
 		this._roomsList = new Array();
+		this._modalOpen = false;
 
 		// Subcriber/Observer Arrays
 		this._chatLogSubscribers = new Array();
@@ -43,30 +47,34 @@ export class StateService {
 		this._roomsListSubscribers = new Array();
 		this._currentRoomSubscribers = new Array();
 		this._socketSubscriptions = new Array();
+		this._modalOpenSubscribers = new Array();
 
 		// Init subs
 		this.resetSocketSubs();
+		this.modal.state().subscribe((openState: boolean) => {
+			this._modalOpen = openState;
+		});
 	}
 
 	// Socket
 	resetSocketSubs(): void {
 		this.unsubscribeAllSocketSubs();
-		let initSub = this.socketService.listen('init').subscribe((data) => this.handleInit(data));
+		let initSub = this.socket.listen('init').subscribe((data) => this.handleInit(data));
 		this._socketSubscriptions.push(initSub);
 
-		let roomSub = this.socketService.listen('join').subscribe((data) => this.handleJoin(data));
+		let roomSub = this.socket.listen('join').subscribe((data) => this.handleJoin(data));
 		this._socketSubscriptions.push(roomSub);
 
-		let messageSub = this.socketService.listen('message').subscribe((data) => this.handleMessage(data));
+		let messageSub = this.socket.listen('message').subscribe((data) => this.handleMessage(data));
 		this._socketSubscriptions.push(messageSub);
 
-		let notificationSub = this.socketService.listen('notify').subscribe((data) => this.handleNotification(data));
+		let notificationSub = this.socket.listen('notify').subscribe((data) => this.handleNotification(data));
 		this._socketSubscriptions.push(notificationSub);
 
-		let loginSub = this.socketService.listen('login').subscribe((data) => this.handleLogin(data));
+		let loginSub = this.socket.listen('login').subscribe((data) => this.handleLogin(data));
 		this._socketSubscriptions.push(loginSub);
 
-		let roomsUpdateSub = this.socketService.listen('roomsUpdate').subscribe((data) => this.handleRoomsUpdate(data));
+		let roomsUpdateSub = this.socket.listen('roomsUpdate').subscribe((data) => this.handleRoomsUpdate(data));
 		this._socketSubscriptions.push(roomsUpdateSub);
 	}
 
@@ -163,10 +171,10 @@ export class StateService {
 		}
 	}
 
-	_getSocketService(): Socket {
-		if (isDevMode()) return this.socketService;
+	_getSocketService(): SocketService {
+		if (isDevMode()) return this.socket;
 		else {
-			console.log(new Error('ERROR StateService._getSocketService() is only availabe in dev mode.'));
+			console.log(new Error('ERROR StateService._getsocket() is only availabe in dev mode.'));
 			return undefined;
 		}
 	}
@@ -215,7 +223,7 @@ export class StateService {
 	leaveCurrentRoom(): void {
 		if (this._currentRoom) {
 			console.log('LEAVE ROOM', this._currentRoom);
-			this.socketService.emit('leave', { user: this._currentUser.getId(), room: this._currentRoom.getRoomID() });
+			this.socket.emit('leave', { user: this._currentUser.getId(), room: this._currentRoom.getRoomID() });
 			this._currentRoom = undefined;
 			this.updateCurrentRoomSubscribers();
 		}
@@ -227,20 +235,11 @@ export class StateService {
 		});
 	}
 
-	async createRoom(roomName: string): Promise<boolean> {
+	joinRoom(rm: ChatRoom): boolean {
 		try {
-			await this.socketService.emit('createRoom', roomName);
-			return true;
-		} catch (error) {
-			console.log(error);
-			return false;
-		}
-	}
-
-	joinRoom(roomID: string): boolean {
-		try {
-			if (!roomID) throw new Error();
-			return this.socketService.emit('join', { user: this._currentUser.getId(), room: roomID });
+			let passwordInput = this.modal.promptRoomPassword(rm.getName());
+			if (!rm.joinable()) throw new Error();
+			return this.socket.emit('join', { user: this._currentUser.getId(), room: rm.getRoomID() });
 		} catch (error) {
 			return false;
 		}
@@ -371,7 +370,7 @@ export class StateService {
 	// Messages
 	sendMessage(message: ChatMessage): boolean {
 		try {
-			this.socketService.emit('message', { ...message.toJSON(), room: this._currentRoom.getRoomID() });
+			this.socket.emit('message', { ...message.toJSON(), room: this._currentRoom.getRoomID() });
 			return true;
 		} catch (error) {
 			console.log('ERROR SENDING MESSAGE -- ', error.message);
@@ -428,7 +427,7 @@ export class StateService {
 
 	attemptLogin(username: string, password: string): boolean {
 		try {
-			this.socketService.emit('login', { username, password });
+			this.socket.emit('login', { username, password });
 			return true;
 		} catch (error) {
 			return false;

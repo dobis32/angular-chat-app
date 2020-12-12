@@ -15,6 +15,12 @@ export class ChatRoom {
 		this._password = password ? password : '';
 	}
 
+	joinable(pw?: string) {
+		if (this._capacity == this._users.length) return false;
+		if (this._password != pw && this._password.length) return false;
+		else return true;
+	}
+
 	userJoin(user: User) {
 		this._users.push(user);
 	}
