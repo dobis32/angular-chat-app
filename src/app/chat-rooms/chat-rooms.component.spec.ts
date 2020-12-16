@@ -79,15 +79,5 @@ describe('ChatRoomsComponent', () => {
 		expect(typeof chatRoomsComponent.joinRoom).toEqual('function');
 	});
 
-	it('should have a function that calls the "joinRoom" function of the StateService', () => {
-		let joinSpy = spyOn(chatRoomsComponent.state, 'joinRoom').and.callFake((rm: ChatRoom) => {
-			return true;
-		});
-		let room = new ChatRoom('id1', 'test', 6);
-
-		chatRoomsComponent.joinRoom(room);
-
-		expect(typeof chatRoomsComponent.joinRoom).toEqual('function');
-		expect(joinSpy).toHaveBeenCalled();
-	});
+	
 });

@@ -7,34 +7,48 @@ import { Subscription, Observable, Observer } from 'rxjs';
 })
 export class ModalService {
 	public roomPasswordPrompt: boolean;
-	private stateModalObserver: Observer<boolean>;
+	private promptResolve: Function;
 
-	constructor() {
+	constructor(private state: StateService) {
 		this.roomPasswordPrompt = false;
 	}
 
-	state(): Observable<boolean> {
-		return new Observable((obs: Observer<boolean>) => {
-			obs.next(false); // init open-state of modal
-			this.stateModalObserver = obs;
-		});
+	promptRoomPassword(roomName: string): Promise<any> {
+		return new Promise((resolve, reject) => {
+			if(this.activatePrompt('roomPassword')) {
+				this.promptResolve = resolve;
+				this.openModal();
+			}
+			else reject(new Error('Prompt does not exist'));
+			
+		})
 	}
 
-	promptRoomPassword(roomName: string) {
-		this.openModal();
-		this.roomPasswordPrompt = true;
+	resolvePrompt(input: string) {
+		if(this.promptResolve) this.promptResolve(input)
+		this.promptResolve = undefined;
+	}
+	
+	activatePrompt(promptName: string): boolean {
+		let res = false;
+		switch(promptName) {
+			case 'roomPassword':
+				this.state.activateModal(promptName);
+				res = true;
+				break;
+			default:
+				res = false;
+				break;
+		}
+
+		return res;
 	}
 
 	openModal() {
-		this.stateModalObserver.next(true);
+		this.state.openModal();
 	}
 
 	closeModal() {
-		this.stateModalObserver.next(false);
-		this.resetModalComponent();
-	}
-
-	resetModalComponent() {
-		this.roomPasswordPrompt = false;
+		this.state.closeModal();
 	}
 }

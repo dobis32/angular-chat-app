@@ -1,5 +1,6 @@
 import { Component, OnInit, Input, isDevMode, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
+import { ModalService } from '../services/modal.service';
 import { StateService } from '../services/state.service';
 import { ChatRoom } from '../util/chatRoom';
 import { User } from '../util/user';
@@ -15,7 +16,7 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	private _currentRoom: ChatRoom;
 	private _subscriptions: Array<Subscription>;
 
-	constructor() {
+	constructor(private modal: ModalService) {
 		this._roomsList = new Array();
 		this._subscriptions = new Array();
 	}
@@ -40,11 +41,11 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		return this._roomsList;
 	}
 
-	joinRoom(room: ChatRoom) {
+	async joinRoom(room: ChatRoom) {
 		try {
-			let result = this.state.joinRoom(room);
-			if (!result) throw new Error();
+			let userInput = await this.modal.promptRoomPassword(room.getName());
 		} catch (error) {
+			console.log(error.message);
 			alert('Failed to join room. Room is either at capacity or something else went wrong on the server-side.');
 		}
 	}

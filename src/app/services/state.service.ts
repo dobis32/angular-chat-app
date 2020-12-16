@@ -13,47 +13,46 @@ let mockUser = new User('Denny Dingus', 'some_nonce');
 })
 export class StateService {
 	// Data
+	private _activeModal: string;
 	private _chatLog: Array<ChatMessage>;
 	private _currentRoom: ChatRoom;
 	private _currentUser: User;
+	private _modalActiveStatus: boolean;
 	private _roomsList: Array<ChatRoom>;
-	private _modalOpen: boolean;
 
 	// Subcriber/Observer Arrays
+	private _activeModalSubscribers: Array<Observer<string>>;
 	private _chatLogSubscribers: Array<Observer<Array<ChatMessage>>>;
 	private _currentRoomSubscribers: Array<Observer<ChatRoom>>;
 	private _currentUserSubscribers: Array<Observer<User>>;
 	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
+	private _modalActiveStatusSubscribers: Array<Observer<boolean>>;
 	private _roomsListSubscribers: Array<Observer<Array<any>>>;
-	private _modalOpenSubscribers: Array<Observer<boolean>>;
 
 	// Subscriptions
 	private _socketSubscriptions: Array<Subscription>;
-	private _modalOpenStateSubscription: Subscription;
 
-	constructor(private socket: SocketService, private modal: ModalService) {
+	constructor(private socket: SocketService) {
 		// Init values
 		// Data
 		this._chatLog = new Array();
 		this._currentRoom = undefined;
 		this._currentUser = undefined;
+		this._modalActiveStatus = false;
 		this._roomsList = new Array();
-		this._modalOpen = false;
 
 		// Subcriber/Observer Arrays
+		this._activeModalSubscribers = new Array();
 		this._chatLogSubscribers = new Array();
+		this._currentRoomSubscribers = new Array();
 		this._currentUserSubscribers = new Array();
 		this._loggedInStatusSubscribers = new Array();
+		this._modalActiveStatusSubscribers = new Array();
 		this._roomsListSubscribers = new Array();
-		this._currentRoomSubscribers = new Array();
 		this._socketSubscriptions = new Array();
-		this._modalOpenSubscribers = new Array();
 
 		// Init subs
 		this.resetSocketSubs();
-		this.modal.state().subscribe((openState: boolean) => {
-			this._modalOpen = openState;
-		});
 	}
 
 	// Socket
@@ -187,6 +186,62 @@ export class StateService {
 		}
 	}
 
+	// Modal
+	modalActiveStatus() {
+		return new Observable((sub: Observer<boolean>) => {
+			sub.next(this._modalActiveStatus);
+			this._modalActiveStatusSubscribers.push(sub);
+		})
+	}
+
+	activateModal(modalName: string) {
+		this._activeModal = modalName;
+	}
+
+	openModal() {
+		this._modalActiveStatus = true;
+	}
+
+	closeModal() {
+		this._modalActiveStatus = false;
+	}
+
+	refreshModalActiveStatusSubscribers() {
+		this._modalActiveStatusSubscribers.forEach((sub: Observer<boolean>) => {
+			sub.next(this._modalActiveStatus);
+		})
+	}
+
+	refreshActiveModalSubscribers() {
+		this._activeModalSubscribers.forEach((sub: Observer<string>) => {
+			sub.next(this._activeModal);
+		})
+	}
+
+	_getActiveModal(): string {
+		if (isDevMode()) return this._activeModal;
+		else {
+			console.log(new Error('ERROR StateService._getActiveModal() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getModalActiveStatus(): boolean {
+		if (isDevMode()) return this._modalActiveStatus;
+		else {
+			console.log(new Error('ERROR StateService._getModalActiveStatus() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_setModalActiveStatus(status: boolean) {
+		if (isDevMode()) this._modalActiveStatus = status;
+		else {
+			console.log(new Error('ERROR StateService._setModalActiveStatus() is only availabe in dev mode.'));
+			
+		}
+	}
+
 	// Rooms
 	currentRoom(): Observable<ChatRoom> {
 		return new Observable((sub: Subscriber<ChatRoom>) => {
@@ -235,14 +290,14 @@ export class StateService {
 		});
 	}
 
-	joinRoom(rm: ChatRoom): boolean {
-		try {
-			let passwordInput = this.modal.promptRoomPassword(rm.getName());
-			if (!rm.joinable()) throw new Error();
-			return this.socket.emit('join', { user: this._currentUser.getId(), room: rm.getRoomID() });
-		} catch (error) {
-			return false;
-		}
+	joinRoom(rm: ChatRoom) {
+		// return new Promise(async (resolve, reject) => {
+
+		// 	let input: string = rm.getPassword().length ? await this.modal.promptRoomPassword(rm.getName()) : '';
+		// 	if(rm.joinable(input)) resolve(true);
+		// 	else reject(new Error('Failed to join room'));
+
+		// });
 	}
 
 	parseRoomsList(unparsedList: Array<any>): Array<ChatRoom> {
