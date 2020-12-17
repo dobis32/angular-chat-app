@@ -8,7 +8,6 @@ import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms'
 })
 export class PasswordModalComponent implements OnInit {
 	@Input() roomName: string;
-	@Output() submit: EventEmitter<string>;
 	public passwordFailed: boolean;
 	public passwordForm: FormGroup;
 
@@ -22,8 +21,8 @@ export class PasswordModalComponent implements OnInit {
 	ngOnInit(): void {}
 
 	submitPassword(fg: FormGroup): void {
-		if (fg.valid) {
-			this.submit.emit(fg.value.password);
-		} else this.passwordFailed = true;
+		// if (fg.valid) {
+		// 	this.submit.emit(fg.value.password);
+		// } else this.passwordFailed = true;
 	}
 }

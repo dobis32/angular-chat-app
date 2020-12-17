@@ -7,7 +7,7 @@ import { Subscription, Observable } from 'rxjs';
 	styleUrls: [ './app.component.scss' ]
 })
 export class AppComponent implements OnInit, OnDestroy {
-	public modalState: Observable<boolean>;
+	public modalActiveState: Observable<boolean>;
 	private localSubscriptions: Array<Subscription>;
 	private loggedInBool: boolean;
 	constructor(private state: StateService) {
@@ -20,6 +20,8 @@ export class AppComponent implements OnInit, OnDestroy {
 			// this.loggedInBool = true;
 		});
 		this.localSubscriptions.push(loggedInSub);
+
+		this.modalActiveState = this.state.modalActiveStatus();
 
 		// this.state.login('Denny Dingus', 'pw');
 	}

@@ -198,26 +198,9 @@ describe('StateService', () => {
 	// Modal
 	it('should have a function that returns an observable of the active-status of the app modal', () => {
 		let obs = service.modalActiveStatus();
-	
+
 		expect(typeof service.modalActiveStatus).toEqual('function');
 		expect(typeof obs.subscribe).toEqual('function');
-	});
-
-	it('should have a function to set the active modal', () => {
-		let testModal = 'Test Modal';
-		service.activateModal(testModal);
-		expect(typeof service.activateModal).toEqual('function');
-		expect(service._getActiveModal()).toEqual(testModal);
-	})
-
-	it('should have a function to open the app modal', () => {
-		let initStatus = false;
-
-		service._setModalActiveStatus(initStatus);
-		service.openModal();
-
-		expect(typeof service.openModal).toEqual('function');
-		expect(service._getModalActiveStatus()).toBeTrue();
 	});
 
 	it('should have a function to close the app modal', () => {
@@ -231,11 +214,9 @@ describe('StateService', () => {
 	});
 
 	it('should have a function to refresh the observers of the modal active status', () => {
-
-
 		expect(typeof service.refreshModalActiveStatusSubscribers).toEqual('function');
-		expect(true).toBeFalse();
-	})
+		// expect(true).toBeFalse();
+	});
 
 	// Chat Rooms
 	it('should have an array for holding data about available chat rooms', () => {

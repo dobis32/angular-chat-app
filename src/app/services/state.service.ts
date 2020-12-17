@@ -4,7 +4,6 @@ import { Observer, Observable, Subscription, Subscriber } from 'rxjs';
 import { ChatMessage } from '../util/chatMessage';
 import { ChatRoom } from '../util/chatRoom';
 import { User } from '../util/user';
-import { ModalService } from './modal.service';
 
 let mockUser = new User('Denny Dingus', 'some_nonce');
 
@@ -13,20 +12,21 @@ let mockUser = new User('Denny Dingus', 'some_nonce');
 })
 export class StateService {
 	// Data
-	private _activeModal: string;
+	private _activeModalName: string;
 	private _chatLog: Array<ChatMessage>;
 	private _currentRoom: ChatRoom;
 	private _currentUser: User;
 	private _modalActiveStatus: boolean;
+	private _modalCB: Function;
 	private _roomsList: Array<ChatRoom>;
 
 	// Subcriber/Observer Arrays
-	private _activeModalSubscribers: Array<Observer<string>>;
 	private _chatLogSubscribers: Array<Observer<Array<ChatMessage>>>;
 	private _currentRoomSubscribers: Array<Observer<ChatRoom>>;
 	private _currentUserSubscribers: Array<Observer<User>>;
 	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
-	private _modalActiveStatusSubscribers: Array<Observer<boolean>>;
+	private _modalSubscriber: Observer<any>;
+	private _modalActiveStatusSubscriber: Observer<boolean>;
 	private _roomsListSubscribers: Array<Observer<Array<any>>>;
 
 	// Subscriptions
@@ -42,12 +42,10 @@ export class StateService {
 		this._roomsList = new Array();
 
 		// Subcriber/Observer Arrays
-		this._activeModalSubscribers = new Array();
 		this._chatLogSubscribers = new Array();
 		this._currentRoomSubscribers = new Array();
 		this._currentUserSubscribers = new Array();
 		this._loggedInStatusSubscribers = new Array();
-		this._modalActiveStatusSubscribers = new Array();
 		this._roomsListSubscribers = new Array();
 		this._socketSubscriptions = new Array();
 
@@ -187,41 +185,52 @@ export class StateService {
 	}
 
 	// Modal
+	modal(): Observable<any> {
+		return new Observable((sub: Observer<any>) => {
+			sub.next({ modal: this._activeModalName, cb: this._modalCB });
+			this._modalSubscriber = sub;
+		});
+	}
+
 	modalActiveStatus() {
 		return new Observable((sub: Observer<boolean>) => {
 			sub.next(this._modalActiveStatus);
-			this._modalActiveStatusSubscribers.push(sub);
-		})
+			this._modalActiveStatusSubscriber = sub;
+		});
 	}
 
-	activateModal(modalName: string) {
-		this._activeModal = modalName;
-	}
-
-	openModal() {
+	openModal(modal: string, cb: Function) {
 		this._modalActiveStatus = true;
+		this._activeModalName = modal;
+		this._modalCB = cb;
+		this.refreshModalSubscriber();
+		this.refreshModalActiveStatusSubscribers();
 	}
 
 	closeModal() {
 		this._modalActiveStatus = false;
+		this._activeModalName = '';
+		this._modalCB = new Function();
+		this.refreshModalSubscriber();
+		this.refreshModalActiveStatusSubscribers();
+	}
+
+	refreshModalSubscriber() {
+		if (this._modalSubscriber)
+			this._modalSubscriber.next({
+				modal: this._activeModalName,
+				cb: this._modalCB
+			});
 	}
 
 	refreshModalActiveStatusSubscribers() {
-		this._modalActiveStatusSubscribers.forEach((sub: Observer<boolean>) => {
-			sub.next(this._modalActiveStatus);
-		})
+		if (this._modalActiveStatusSubscriber) this._modalActiveStatusSubscriber.next(this._modalActiveStatus);
 	}
 
-	refreshActiveModalSubscribers() {
-		this._activeModalSubscribers.forEach((sub: Observer<string>) => {
-			sub.next(this._activeModal);
-		})
-	}
-
-	_getActiveModal(): string {
-		if (isDevMode()) return this._activeModal;
+	_getActiveModalName(): string {
+		if (isDevMode()) return this._activeModalName;
 		else {
-			console.log(new Error('ERROR StateService._getActiveModal() is only availabe in dev mode.'));
+			console.log(new Error('ERROR StateService._getActiveModalName() is only availabe in dev mode.'));
 			return undefined;
 		}
 	}
@@ -238,11 +247,26 @@ export class StateService {
 		if (isDevMode()) this._modalActiveStatus = status;
 		else {
 			console.log(new Error('ERROR StateService._setModalActiveStatus() is only availabe in dev mode.'));
-			
 		}
 	}
 
 	// Rooms
+	joinRoom(room: ChatRoom): Promise<any> {
+		return new Promise((resolve, reject) => {
+			if (room.getPassword().length)
+				this.openModal('promptRoomPassword', (userInput: any) => {
+					if (room.joinable(userInput)) {
+						room.userJoin(this._currentUser);
+						resolve(true);
+					} else reject(new Error('Failed to join room'));
+				});
+			else if (room.joinable()) {
+				room.userJoin(this._currentUser);
+				resolve(true);
+			} else reject(new Error('Failed to join room'));
+		});
+	}
+
 	currentRoom(): Observable<ChatRoom> {
 		return new Observable((sub: Subscriber<ChatRoom>) => {
 			sub.next(this._currentRoom);
@@ -288,16 +312,6 @@ export class StateService {
 		this._currentRoomSubscribers.forEach((obs: Observer<ChatRoom>) => {
 			obs.next(this._currentRoom);
 		});
-	}
-
-	joinRoom(rm: ChatRoom) {
-		// return new Promise(async (resolve, reject) => {
-
-		// 	let input: string = rm.getPassword().length ? await this.modal.promptRoomPassword(rm.getName()) : '';
-		// 	if(rm.joinable(input)) resolve(true);
-		// 	else reject(new Error('Failed to join room'));
-
-		// });
 	}
 
 	parseRoomsList(unparsedList: Array<any>): Array<ChatRoom> {

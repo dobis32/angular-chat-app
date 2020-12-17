@@ -10,8 +10,11 @@ import { Subscription } from 'rxjs';
 })
 export class ModalComponent implements OnInit, OnDestroy {
 	@Input() state: StateService;
+	public activeModalName: string;
 	public roomName: string;
+	public modalCB: Function;
 	private currRoomSub: Subscription;
+	private modalSub: Subscription;
 
 	constructor() {
 		this.roomName = '';
@@ -21,10 +24,17 @@ export class ModalComponent implements OnInit, OnDestroy {
 		this.currRoomSub = this.state.currentRoom().subscribe((rm: ChatRoom) => {
 			if (rm) this.roomName = rm.getName();
 		});
+
+		this.modalSub = this.state.modal().subscribe((data: any) => {
+			let { modal, cb } = data;
+			this.activeModalName = modal;
+			this.modalCB = cb;
+		});
 	}
 
 	ngOnDestroy(): void {
-		this.currRoomSub.unsubscribe();
+		if (this.currRoomSub) this.currRoomSub.unsubscribe();
+		if (this.modalSub) this.modalSub.unsubscribe();
 	}
 
 	submitRoomPassword(e: Event) {
