@@ -2,6 +2,7 @@ import { Component, OnInit, Input, OnDestroy } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
 import { ChatRoom } from 'src/app/util/chatRoom';
 import { Subscription } from 'rxjs';
+import { FormGroup } from '@angular/forms';
 
 @Component({
 	selector: 'app-modal',
@@ -15,9 +16,11 @@ export class ModalComponent implements OnInit, OnDestroy {
 	public modalCB: Function;
 	private currRoomSub: Subscription;
 	private modalSub: Subscription;
+	private userInput: string;
 
 	constructor() {
 		this.roomName = '';
+		this.userInput = '';
 	}
 
 	ngOnInit(): void {
@@ -37,7 +40,11 @@ export class ModalComponent implements OnInit, OnDestroy {
 		if (this.modalSub) this.modalSub.unsubscribe();
 	}
 
-	submitRoomPassword(e: Event) {
-		console.log(e);
+	handleInput(fg: FormGroup) {
+		this.closeModal();
+	}
+
+	closeModal() {
+		this.state.closeModal();
 	}
 }

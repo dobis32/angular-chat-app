@@ -46,6 +46,8 @@ export class StateService {
 		this._currentRoomSubscribers = new Array();
 		this._currentUserSubscribers = new Array();
 		this._loggedInStatusSubscribers = new Array();
+		this._modalSubscriber = undefined;
+		this._modalActiveStatusSubscriber = undefined;
 		this._roomsListSubscribers = new Array();
 		this._socketSubscriptions = new Array();
 
@@ -235,6 +237,28 @@ export class StateService {
 		}
 	}
 
+	_setActiveModalName(modalName: string) {
+		if (isDevMode()) this._activeModalName = modalName;
+		else {
+			console.log(new Error('ERROR StateService._setActiveModalName() is only availabe in dev mode.'));
+		}
+	}
+
+	_getModalCB(): Function {
+		if (isDevMode()) return this._modalCB;
+		else {
+			console.log(new Error('ERROR StateService._getModalCB() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_setModalCB(cb: Function) {
+		if (isDevMode()) this._modalCB = cb;
+		else {
+			console.log(new Error('ERROR StateService._setModalCB() is only availabe in dev mode.'));
+		}
+	}
+
 	_getModalActiveStatus(): boolean {
 		if (isDevMode()) return this._modalActiveStatus;
 		else {
@@ -252,19 +276,31 @@ export class StateService {
 
 	// Rooms
 	joinRoom(room: ChatRoom): Promise<any> {
+		if (room.getPassword().length)
+			return this.joinPrivateRoom(room);
+		else return this.joinPublicRoom(room);
+	}
+
+	joinPublicRoom(room: ChatRoom): Promise<any> {
 		return new Promise((resolve, reject) => {
-			if (room.getPassword().length)
-				this.openModal('promptRoomPassword', (userInput: any) => {
-					if (room.joinable(userInput)) {
-						room.userJoin(this._currentUser);
-						resolve(true);
-					} else reject(new Error('Failed to join room'));
-				});
-			else if (room.joinable()) {
-				room.userJoin(this._currentUser);
+			if (room.joinable()) {
+				this.socket.emit('join', {user: this._currentUser.getId(), room: room.getRoomID()})
 				resolve(true);
-			} else reject(new Error('Failed to join room'));
-		});
+			} else resolve(false);
+		})
+	}
+
+	joinPrivateRoom(room: ChatRoom): Promise<any> {
+		return new Promise((resolve, reject) => {
+			this.openModal('promptRoomPassword', (userInput: string) => {
+				if(!userInput.length) resolve(true);
+				else if (room.joinable(userInput)) {
+					this.socket.emit('join', {user: this._currentUser.getId(), room: room.getRoomID()})
+					resolve(true);
+				} 
+				else resolve(false);
+			});
+		})
 	}
 
 	currentRoom(): Observable<ChatRoom> {

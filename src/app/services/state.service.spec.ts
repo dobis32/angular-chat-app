@@ -196,12 +196,39 @@ describe('StateService', () => {
 	});
 
 	// Modal
+	it('should have a function that returns an observable of the active modal name and callback function', () => {
+		let obs = service.modal();
+
+		expect(typeof service.modal).toEqual('function');
+		expect(typeof obs.subscribe).toEqual('function');
+	});
+
 	it('should have a function that returns an observable of the active-status of the app modal', () => {
 		let obs = service.modalActiveStatus();
 
 		expect(typeof service.modalActiveStatus).toEqual('function');
 		expect(typeof obs.subscribe).toEqual('function');
 	});
+
+	it('should have a function to open the app modal and set the modal-active status and callback function', () => {
+		let modalName = 'test';
+		let cb = () => { return true }
+		let refreshModalSubsSpy = spyOn(service, 'refreshModalSubscriber').and.callThrough();
+		let refreshModalActiveStatusSubsSpy = spyOn(service, 'refreshModalActiveStatusSubscribers').and.callThrough();
+
+		service._setModalActiveStatus(false);
+		service._setModalCB(undefined);
+		service._setActiveModalName(undefined);
+
+		service.openModal(modalName, cb);
+
+		expect(typeof service.openModal).toEqual('function');
+		expect(refreshModalSubsSpy).toHaveBeenCalled();
+		expect(refreshModalActiveStatusSubsSpy).toHaveBeenCalled();
+		expect(service._getModalActiveStatus()).toBeTrue();
+		expect(service._getActiveModalName()).toEqual(modalName);
+		expect(service._getModalCB()).toEqual(cb);
+	})
 
 	it('should have a function to close the app modal', () => {
 		let initStatus = true;
@@ -212,6 +239,8 @@ describe('StateService', () => {
 		expect(typeof service.closeModal).toEqual('function');
 		expect(service._getModalActiveStatus()).toBeFalse();
 	});
+
+
 
 	it('should have a function to refresh the observers of the modal active status', () => {
 		expect(typeof service.refreshModalActiveStatusSubscribers).toEqual('function');
