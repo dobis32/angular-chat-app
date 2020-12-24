@@ -212,9 +212,11 @@ describe('StateService', () => {
 
 	it('should have a function to open the app modal and set the modal-active status and callback function', () => {
 		let modalName = 'test';
-		let cb = () => { return true }
+		let cb = () => {
+			return true;
+		};
 		let refreshModalSubsSpy = spyOn(service, 'refreshModalSubscriber').and.callThrough();
-		let refreshModalActiveStatusSubsSpy = spyOn(service, 'refreshModalActiveStatusSubscribers').and.callThrough();
+		let refreshModalActiveStatusSubsSpy = spyOn(service, 'refreshModalActiveStatusSubscriber').and.callThrough();
 
 		service._setModalActiveStatus(false);
 		service._setModalCB(undefined);
@@ -228,23 +230,58 @@ describe('StateService', () => {
 		expect(service._getModalActiveStatus()).toBeTrue();
 		expect(service._getActiveModalName()).toEqual(modalName);
 		expect(service._getModalCB()).toEqual(cb);
-	})
+	});
 
 	it('should have a function to close the app modal', () => {
 		let initStatus = true;
+		let refreshModalSubsSpy = spyOn(service, 'refreshModalSubscriber').and.callThrough();
+		let refreshModalActiveStatusSubsSpy = spyOn(service, 'refreshModalActiveStatusSubscriber').and.callThrough();
 
 		service._setModalActiveStatus(initStatus);
 		service.closeModal();
 
 		expect(typeof service.closeModal).toEqual('function');
 		expect(service._getModalActiveStatus()).toBeFalse();
+		expect(refreshModalSubsSpy).toHaveBeenCalled();
+		expect(refreshModalActiveStatusSubsSpy).toHaveBeenCalled();
 	});
 
+	it('should have a function to refresh the observer of the modal active status', () => {
+		let sub = service.modalActiveStatus().subscribe();
+		let activeStatusObserver = service._getModalActiveStatusSubscriber();
+		let observerSpy = spyOn(activeStatusObserver, 'next').and.callThrough();
 
+		service.refreshModalActiveStatusSubscriber();
 
-	it('should have a function to refresh the observers of the modal active status', () => {
-		expect(typeof service.refreshModalActiveStatusSubscribers).toEqual('function');
-		// expect(true).toBeFalse();
+		expect(typeof service.refreshModalActiveStatusSubscriber).toEqual('function');
+		expect(observerSpy).toHaveBeenCalled();
+
+		sub.unsubscribe();
+	});
+
+	it('should have a function to refresh the observer of the modal', () => {
+		let sub = service.modal().subscribe();
+		let modalObserver = service._getModalSubscriber();
+		let observerSpy = spyOn(modalObserver, 'next').and.callThrough();
+
+		service.refreshModalSubscriber();
+
+		expect(typeof service.refreshModalSubscriber).toEqual('function');
+		expect(observerSpy).toHaveBeenCalled();
+
+		sub.unsubscribe();
+	});
+
+	it('should have the current modal callback function', () => {
+		let cb = () => {};
+		service._setModalCB(cb);
+		expect(service._getModalCB()).toEqual(cb);
+	});
+
+	it('should have the current active-modal name', () => {
+		let modalName = 'test';
+		service._setActiveModalName(modalName);
+		expect(service._getActiveModalName()).toEqual(modalName);
 	});
 
 	// Chat Rooms

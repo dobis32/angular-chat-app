@@ -1,8 +1,7 @@
 <div (window:beforeunload)="appUnload()" id="app-container">
     <app-modal *ngIf="modalActiveState | async" [state]="getStateService()"></app-modal>
-    <app-login *ngIf="!isLoggedIn()" [state]="getStateService()"></app-login>
-    <app-chat-rooms *ngIf="isLoggedIn()" [state]="getStateService()"></app-chat-rooms>
-    <app-chat-log *ngIf="isLoggedIn()" [state]="getStateService()"></app-chat-log>
-    <app-state-display *ngIf="isLoggedIn()" [state]="getStateService()"></app-state-display>
-    
+    <app-login *ngIf="!(loggedInBool | async)" [state]="getStateService()"></app-login>
+    <app-chat-rooms *ngIf="loggedInBool | async" [state]="getStateService()"></app-chat-rooms>
+    <app-chat-log *ngIf="loggedInBool | async" [state]="getStateService()"></app-chat-log>
+    <app-state-display  [state]="getStateService()"></app-state-display>
 </div>

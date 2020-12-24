@@ -3,7 +3,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { AppComponent } from './app.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { StateService } from './services/state.service';
-import { Observable, Subscription } from 'rxjs';
+import { Observable, Subscription, Observer } from 'rxjs';
 describe('AppComponent', () => {
 	let fixture: ComponentFixture<AppComponent>;
 	let app: AppComponent;
@@ -18,6 +18,15 @@ describe('AppComponent', () => {
 		app = fixture.componentInstance;
 	});
 
+	// DOM-Related
+	it('should have a function that returns the StateService', () => {
+		expect(typeof app.getStateService).toEqual('function');
+		expect(app.getStateService()).toEqual(app._getStateService());
+	});
+
+	it('should have a function that returns the current');
+
+	// Init
 	it('should create the app', () => {
 		expect(app).toBeTruthy();
 	});
@@ -26,56 +35,36 @@ describe('AppComponent', () => {
 		expect(fixture.debugElement.injector.get(StateService)).toBeTruthy();
 	});
 
-	it('should subscribe to the logged-in status of the StateService on init', () => {
-		let loggedIn = true;
-		let loggedInStatusSpy = spyOn(app._getStateService(), 'loggedInStatus').and.callFake(() => {
-			return new Observable((sub) => {
-				sub.next(loggedIn);
-			});
-		});
-		app.ngOnInit();
-		expect(loggedInStatusSpy).toHaveBeenCalled();
-		expect(app._getLoggedInBool()).toBeTruthy();
+	it('should have an array for local subscriptions', () => {
+		expect(Array.isArray(app._getLocalSubscriptions())).toBeTrue();
 	});
 
-	it('should unsubscribe from the logged-in status subscription it gets from the StateService when it it destroyed', () => {
+	// Lifecycle
+	it(`should have an observable of the app's modal active state`, () => {
 		app.ngOnInit();
 
-		let loggedInSubSpy = spyOn(app._getLocalSubscriptions()[0], 'unsubscribe').and.callThrough();
-
-		app.ngOnDestroy();
-
-		expect(loggedInSubSpy).toHaveBeenCalled();
+		expect(typeof app.modalActiveState.subscribe).toEqual('function');
 	});
 
-	it('should have a function that returns the injected StateService', () => {
-		expect(app._getStateService()).toEqual(fixture.debugElement.injector.get(StateService));
-	});
+	it('should subscribe to the logged-in status of the StateService on init and add that subscription to the local subscriptions array', () => {
+		let loggedInBoolSpy = spyOn(app._getStateService(), 'loggedInStatus').and.callThrough();
 
-	it('should have a function that returns the injected StateService', () => {
-		let loggedIn = true;
-		spyOn(app._getStateService(), 'loggedInStatus').and.callFake(() => {
-			return new Observable((sub) => {
-				sub.next(loggedIn);
-			});
-		});
 		app.ngOnInit();
-		expect(app.isLoggedIn()).toEqual(app._getLoggedInBool());
+
+		expect(loggedInBoolSpy).toHaveBeenCalled();
+		expect(typeof app.loggedInBool.subscribe).toEqual('function');
 	});
 
-	it('should have a function for unsubscribing from local subscriptions', () => {
-		expect(typeof app.unsubLocalSubscriptions).toEqual('function');
+	it('should get the modal-active status from the state and assign it to the corresponding class variable', () => {
+		let modalActiveStatusSpy = spyOn(app._getStateService(), 'modalActiveStatus').and.callThrough();
+
+		app.ngOnInit();
+
+		expect(modalActiveStatusSpy).toHaveBeenCalled();
+		expect(typeof app.modalActiveState.subscribe).toEqual('function');
 	});
 
-	it('should unsubscribe from its logged-in-status subscription when unsubbing from local subscriptions', () => {
-		app._setLocalSubscriptions([ new Subscription() ]);
-		let loggedInUnsubSpy = spyOn(app._getLocalSubscriptions()[0], 'unsubscribe').and.callFake(() => {});
-
-		app.unsubLocalSubscriptions();
-
-		expect(loggedInUnsubSpy).toHaveBeenCalled();
-	});
-
+	// Window
 	it('should have a function for when the window unloads', () => {
 		expect(typeof app.appUnload).toEqual('function');
 	});
@@ -86,14 +75,6 @@ describe('AppComponent', () => {
 		app.appUnload();
 
 		expect(logoutSpy).toHaveBeenCalled();
-	});
-
-	it('should call the "unsubLocalSubscriptions" function when the window unloads', () => {
-		let unsubLocalSubsSpy = spyOn(app, 'unsubLocalSubscriptions').and.callFake(() => {});
-
-		app.appUnload();
-
-		expect(unsubLocalSubsSpy).toHaveBeenCalled();
 	});
 
 	it('should unsubscribe from all socket-related subscriptions of the state service when the window unloads', () => {

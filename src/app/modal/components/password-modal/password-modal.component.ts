@@ -1,5 +1,5 @@
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
-import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, isDevMode } from '@angular/core';
+import { FormBuilder, FormGroup, FormControl } from '@angular/forms';
 
 @Component({
 	selector: 'app-password-modal',
@@ -9,18 +9,16 @@ import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms'
 export class PasswordModalComponent implements OnInit, OnDestroy {
 	@Input() roomName: string;
 	@Input() cb: Function;
+
 	@Output() submit: EventEmitter<FormGroup> = new EventEmitter();
-	
-	public passwordFailed: boolean;
+
 	public passwordForm: FormGroup;
 
 	private submitting: boolean;
 
-
 	constructor(private formBuilder: FormBuilder) {
-		this.passwordFailed = false;
 		this.passwordForm = this.formBuilder.group({
-			password: new FormControl('', [ Validators.required, Validators.minLength(1) ])
+			password: new FormControl('')
 		});
 		this.submitting = false;
 	}
@@ -28,18 +26,31 @@ export class PasswordModalComponent implements OnInit, OnDestroy {
 	ngOnInit(): void {}
 
 	ngOnDestroy(): void {
-		if(!this.submitting) this.passwordForm.setValue({password: ''});
-		this.cb(this.passwordForm.value.password)
+		if (!this.submitting) this.passwordForm.setValue({ password: '' });
+		this.cb(this.passwordForm.value.password);
 	}
 
 	submitPassword(fg: FormGroup): void {
 		this.submitting = true;
-		if (fg.valid) {
-			this.submit.emit(fg);
-		} else this.passwordFailed = true;
+		this.submit.emit(fg);
 	}
 
 	stopPropagation(event: Event) {
 		event.stopPropagation();
+	}
+
+	_getSubmittingBool(): boolean {
+		if (isDevMode()) return this.submitting;
+		else {
+			console.log(new Error('ERROR _getSubmittingBool() is only available in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_setSubmittingBool(bool: boolean) {
+		if (isDevMode()) this.submitting = bool;
+		else {
+			console.log(new Error('ERROR _setSubmittingBool() is only available in dev mode.'));
+		}
 	}
 }

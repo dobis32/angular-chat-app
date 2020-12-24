@@ -9,26 +9,18 @@ import { Subscription, Observable } from 'rxjs';
 export class AppComponent implements OnInit, OnDestroy {
 	public modalActiveState: Observable<boolean>;
 	private localSubscriptions: Array<Subscription>;
-	private loggedInBool: boolean;
+	public loggedInBool: Observable<boolean>;
 	constructor(private state: StateService) {
 		this.localSubscriptions = new Array();
 	}
 
 	ngOnInit(): void {
-		let loggedInSub = this.state.loggedInStatus().subscribe((status) => {
-			this.loggedInBool = status;
-			// this.loggedInBool = true;
-		});
-		this.localSubscriptions.push(loggedInSub);
+		this.loggedInBool = this.state.loggedInStatus();
 
 		this.modalActiveState = this.state.modalActiveStatus();
-
-		// this.state.login('Denny Dingus', 'pw');
 	}
 
-	ngOnDestroy(): void {
-		this.unsubLocalSubscriptions();
-	}
+	ngOnDestroy(): void {}
 
 	appInDevMode(): boolean {
 		return isDevMode();
@@ -36,28 +28,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
 	appUnload() {
 		this.state.logout();
-		this.unsubLocalSubscriptions();
 		this.state.unsubscribeAllSocketSubs();
-	}
-
-	unsubLocalSubscriptions() {
-		while (this.localSubscriptions.length) this.localSubscriptions.shift().unsubscribe();
 	}
 
 	getStateService(): StateService {
 		return this.state;
-	}
-
-	isLoggedIn(): boolean {
-		return this.loggedInBool;
-	}
-
-	_getLoggedInBool(): boolean {
-		if (isDevMode()) return this.loggedInBool;
-		else {
-			console.log(new Error('ERROR _getLoggedInBool() is only available in dev mode.'));
-			return undefined;
-		}
 	}
 
 	_getStateService(): StateService {
@@ -80,7 +55,6 @@ export class AppComponent implements OnInit, OnDestroy {
 		if (isDevMode()) this.localSubscriptions = sub;
 		else {
 			console.log(new Error('ERROR _setLoggedInSubscription() is only available in dev mode.'));
-			return undefined;
 		}
 	}
 }

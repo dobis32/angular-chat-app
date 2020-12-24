@@ -206,7 +206,7 @@ export class StateService {
 		this._activeModalName = modal;
 		this._modalCB = cb;
 		this.refreshModalSubscriber();
-		this.refreshModalActiveStatusSubscribers();
+		this.refreshModalActiveStatusSubscriber();
 	}
 
 	closeModal() {
@@ -214,7 +214,7 @@ export class StateService {
 		this._activeModalName = '';
 		this._modalCB = new Function();
 		this.refreshModalSubscriber();
-		this.refreshModalActiveStatusSubscribers();
+		this.refreshModalActiveStatusSubscriber();
 	}
 
 	refreshModalSubscriber() {
@@ -225,7 +225,7 @@ export class StateService {
 			});
 	}
 
-	refreshModalActiveStatusSubscribers() {
+	refreshModalActiveStatusSubscriber() {
 		if (this._modalActiveStatusSubscriber) this._modalActiveStatusSubscriber.next(this._modalActiveStatus);
 	}
 
@@ -274,33 +274,49 @@ export class StateService {
 		}
 	}
 
+	_getModalActiveStatusSubscriber(): Observer<boolean> {
+		if (isDevMode()) return this._modalActiveStatusSubscriber;
+		else {
+			console.log(
+				new Error('ERROR StateService._getModalActiveStatusSubscriber() is only availabe in dev mode.')
+			);
+			return undefined;
+		}
+	}
+
+	_getModalSubscriber(): Observer<any> {
+		if (isDevMode()) return this._modalSubscriber;
+		else {
+			console.log(new Error('ERROR StateService._getModalSubscriber() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
 	// Rooms
 	joinRoom(room: ChatRoom): Promise<any> {
-		if (room.getPassword().length)
-			return this.joinPrivateRoom(room);
+		if (room.getPassword().length) return this.joinPrivateRoom(room);
 		else return this.joinPublicRoom(room);
 	}
 
 	joinPublicRoom(room: ChatRoom): Promise<any> {
 		return new Promise((resolve, reject) => {
 			if (room.joinable()) {
-				this.socket.emit('join', {user: this._currentUser.getId(), room: room.getRoomID()})
+				this.socket.emit('join', { user: this._currentUser.getId(), room: room.getRoomID() });
 				resolve(true);
 			} else resolve(false);
-		})
+		});
 	}
 
 	joinPrivateRoom(room: ChatRoom): Promise<any> {
 		return new Promise((resolve, reject) => {
 			this.openModal('promptRoomPassword', (userInput: string) => {
-				if(!userInput.length) resolve(true);
+				if (!userInput.length) resolve(true);
 				else if (room.joinable(userInput)) {
-					this.socket.emit('join', {user: this._currentUser.getId(), room: room.getRoomID()})
+					this.socket.emit('join', { user: this._currentUser.getId(), room: room.getRoomID() });
 					resolve(true);
-				} 
-				else resolve(false);
+				} else resolve(false);
 			});
-		})
+		});
 	}
 
 	currentRoom(): Observable<ChatRoom> {

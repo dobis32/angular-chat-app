@@ -1,8 +1,7 @@
-import { Component, OnInit, Input, OnDestroy } from '@angular/core';
+import { Component, OnInit, Input, OnDestroy, isDevMode } from '@angular/core';
 import { StateService } from 'src/app/services/state.service';
 import { ChatRoom } from 'src/app/util/chatRoom';
 import { Subscription } from 'rxjs';
-import { FormGroup } from '@angular/forms';
 
 @Component({
 	selector: 'app-modal',
@@ -14,21 +13,21 @@ export class ModalComponent implements OnInit, OnDestroy {
 	public activeModalName: string;
 	public roomName: string;
 	public modalCB: Function;
-	private currRoomSub: Subscription;
-	private modalSub: Subscription;
-	private userInput: string;
+	private _currRoomSub: Subscription;
+	private _modalSub: Subscription;
 
 	constructor() {
+		this.activeModalName = '';
 		this.roomName = '';
-		this.userInput = '';
+		this.modalCB = () => {};
 	}
 
 	ngOnInit(): void {
-		this.currRoomSub = this.state.currentRoom().subscribe((rm: ChatRoom) => {
+		this._currRoomSub = this.state.currentRoom().subscribe((rm: ChatRoom) => {
 			if (rm) this.roomName = rm.getName();
 		});
 
-		this.modalSub = this.state.modal().subscribe((data: any) => {
+		this._modalSub = this.state.modal().subscribe((data: any) => {
 			let { modal, cb } = data;
 			this.activeModalName = modal;
 			this.modalCB = cb;
@@ -36,15 +35,27 @@ export class ModalComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnDestroy(): void {
-		if (this.currRoomSub) this.currRoomSub.unsubscribe();
-		if (this.modalSub) this.modalSub.unsubscribe();
-	}
-
-	handleInput(fg: FormGroup) {
-		this.closeModal();
+		if (this._currRoomSub) this._currRoomSub.unsubscribe();
+		if (this._modalSub) this._modalSub.unsubscribe();
 	}
 
 	closeModal() {
 		this.state.closeModal();
+	}
+
+	_getCurrRoomSub(): Subscription {
+		if (isDevMode()) return this._currRoomSub;
+		else {
+			console.log(new Error('ERROR _getCurrRoomSub() is only available in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getModalSub(): Subscription {
+		if (isDevMode()) return this._modalSub;
+		else {
+			console.log(new Error('ERROR _getModalSub() is only available in dev mode.'));
+			return undefined;
+		}
 	}
 }
