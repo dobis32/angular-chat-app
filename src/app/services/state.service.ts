@@ -5,8 +5,6 @@ import { ChatMessage } from '../util/chatMessage';
 import { ChatRoom } from '../util/chatRoom';
 import { User } from '../util/user';
 
-let mockUser = new User('Denny Dingus', 'some_nonce');
-
 @Injectable({
 	providedIn: 'root'
 })
@@ -39,6 +37,7 @@ export class StateService {
 		this._currentRoom = undefined;
 		this._currentUser = undefined;
 		this._modalActiveStatus = false;
+		this._modalCB = () => {};
 		this._roomsList = new Array();
 
 		// Subcriber/Observer Arrays

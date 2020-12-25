@@ -18,9 +18,6 @@ class TestHostComponent {
 }
 
 describe('LoginComponent', () => {
-	// let component: LoginComponent;
-	// let fixture: ComponentFixture<LoginComponent>;
-
 	let hostComponent: TestHostComponent;
 	let hostFixture: ComponentFixture<TestHostComponent>;
 	let loginDebugElement: DebugElement;
@@ -32,9 +29,7 @@ describe('LoginComponent', () => {
 			declarations: [ LoginComponent, TestHostComponent ],
 			providers: [ FormBuilder ]
 		}).compileComponents();
-	});
 
-	beforeEach(() => {
 		hostFixture = TestBed.createComponent(TestHostComponent);
 		hostComponent = hostFixture.componentInstance;
 		hostFixture.detectChanges();
@@ -42,27 +37,7 @@ describe('LoginComponent', () => {
 		loginComponent = loginDebugElement.componentInstance;
 	});
 
-	it('should create', () => {
-		expect(hostComponent).toBeTruthy();
-		expect(loginComponent).toBeTruthy();
-	});
-
-	it('should have the state service injected into it from the parent/host component', () => {
-		expect(loginComponent.state).toEqual(hostComponent.getState());
-	});
-
-	it('should have a FormBuilder', () => {
-		expect(loginComponent._getFormBuilder()).toBeTruthy();
-	});
-
-	it('should have a FormGroup for login credentials', () => {
-		expect(loginComponent.loginForm).toBeTruthy();
-	});
-
-	it('should have a function for logging-in', () => {
-		expect(typeof loginComponent.login).toEqual('function');
-	});
-
+	// DOM Re-lated
 	it('should have an invalid login message when logging-in fails', () => {
 		let initState = loginComponent.loginFailed;
 
@@ -109,5 +84,27 @@ describe('LoginComponent', () => {
 		expect(loginSpy).toHaveBeenCalledWith(username, password);
 		expect(loginComponent.loginForm.valid).toBeTrue();
 		expect(loginComponent.loginFailed).toBeFalse();
+	});
+
+	// Init
+	it('should create', () => {
+		expect(hostComponent).toBeTruthy();
+		expect(loginComponent).toBeTruthy();
+	});
+
+	it('should have the state service injected into it from the parent/host component', () => {
+		expect(loginComponent.state).toEqual(hostComponent.getState());
+	});
+
+	it('should have a FormBuilder', () => {
+		expect(loginComponent._getFormBuilder()).toBeTruthy();
+	});
+
+	it('should have a FormGroup for login credentials', () => {
+		expect(loginComponent.loginForm).toBeTruthy();
+	});
+
+	it('should have a function for logging-in', () => {
+		expect(typeof loginComponent.login).toEqual('function');
 	});
 });

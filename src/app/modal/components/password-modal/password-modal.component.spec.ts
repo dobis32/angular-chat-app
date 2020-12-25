@@ -6,12 +6,14 @@ import { By } from '@angular/platform-browser';
 
 @Component({
 	selector: `host-component`,
-	template: `<app-password-modal [roomName]="roomName" [cb]="cb"></app-password-modal>`
+	template: `<app-password-modal [roomName]="roomName" [cb]="cb" (submit)="handleSubmit()"></app-password-modal>`
 })
 class TestHostComponent {
 	public roomName = 'test_room';
 	public cb = () => {};
 	constructor() {}
+
+	handleSubmit() {}
 }
 
 describe('PasswordModalComponent', () => {
@@ -32,6 +34,31 @@ describe('PasswordModalComponent', () => {
 		hostFixture.detectChanges();
 		modalDebugElement = hostFixture.debugElement.query(By.directive(PasswordModalComponent));
 		passwordModalComponent = modalDebugElement.componentInstance;
+	});
+
+	// DOM-Related
+	it("should have a function for submitting the user's input from the password form", () => {
+		expect(typeof passwordModalComponent.submitPassword).toEqual('function');
+	});
+
+	it('should change the submitting component/class variable to true when submitting input', () => {
+		passwordModalComponent.submitPassword(passwordModalComponent.passwordForm);
+
+		expect(passwordModalComponent._getSubmittingBool()).toBeTrue();
+	});
+
+	it('should emit from the submit component/class EventEmitter when submitting input', () => {
+		let submitSpy = spyOn(passwordModalComponent.submit, 'emit').and.callThrough();
+		let handleSubmitSpy = spyOn(hostComponent, 'handleSubmit').and.callThrough();
+
+		passwordModalComponent.submitPassword(passwordModalComponent.passwordForm);
+
+		expect(submitSpy).toHaveBeenCalledWith(passwordModalComponent.passwordForm);
+		expect(handleSubmitSpy).toHaveBeenCalled();
+	});
+
+	it('should have a function for stopping event propagation', () => {
+		expect(typeof passwordModalComponent.stopPropagation).toEqual('function');
 	});
 
 	// Init

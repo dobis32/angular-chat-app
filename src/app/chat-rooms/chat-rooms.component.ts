@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, isDevMode, OnDestroy, ElementRef } from '@angular/core';
+import { Component, OnInit, Input, isDevMode, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { StateService } from '../services/state.service';
 import { ChatRoom } from '../util/chatRoom';
@@ -33,6 +33,10 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnDestroy(): void {
+		this.unsubLocalSubscriptions();
+	}
+
+	unsubLocalSubscriptions(): void {
 		while (this._subscriptions.length) this._subscriptions.shift().unsubscribe();
 	}
 
@@ -52,7 +56,6 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	}
 
 	leaveRoom(): void {
-		// unit test
 		this.state.leaveCurrentRoom();
 	}
 
@@ -64,11 +67,25 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		return this._currentRoom.getUsers();
 	}
 
+	_setCurrentRoom(rm: ChatRoom) {
+		if (isDevMode()) this._currentRoom = rm;
+		else {
+			console.log('Sorry _setCurrentRoom() is only available in dev mode');
+		}
+	}
+
 	_getRoomsList(): Array<any> {
 		if (isDevMode()) return this._roomsList;
 		else {
 			console.log('Sorry _getRoomsList() is only available in dev mode');
 			return undefined;
+		}
+	}
+
+	_setRoomsList(roomsList: Array<ChatRoom>) {
+		if (isDevMode()) this._roomsList = roomsList;
+		else {
+			console.log('Sorry _setRoomsList() is only available in dev mode');
 		}
 	}
 

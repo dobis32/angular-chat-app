@@ -10,19 +10,16 @@ export class ChatMessageComponent implements OnInit {
 	@Input() messageBuffer: ChatMessage;
 	@Input() clientMessage: boolean;
 	private _message: ChatMessage;
-	private _messageType: string;
 	constructor() {
 		this.messageBuffer = new ChatMessage('', '', new Date(), '');
 	}
 
 	ngOnInit(): void {
 		this._message = this.messageBuffer;
-		this._messageType = this.clientMessage ? 'client-message' : 'user-message';
-		console.log('MESSAGE TYPE', this._messageType);
 	}
 
 	getMessageType(): string {
-		return this._messageType;
+		return this.clientMessage ? 'client-message' : 'user-message';
 	}
 
 	userName() {

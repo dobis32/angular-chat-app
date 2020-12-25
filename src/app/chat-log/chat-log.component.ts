@@ -41,7 +41,6 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 		this.localSubscriptions.push(chatSub);
 
 		let userSub = this.state.currentUser().subscribe((user: User) => {
-			console.log('user sub', user);
 			this.currentUser = user;
 		});
 		this.localSubscriptions.push(userSub);

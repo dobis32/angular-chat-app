@@ -38,6 +38,55 @@ describe('ChatRoomsComponent', () => {
 		chatRoomsComponent = ChatRoomsDebugElement.componentInstance;
 	});
 
+	afterEach(() => {
+		chatRoomsComponent.unsubLocalSubscriptions();
+	});
+
+	// DOM-Related
+	it('should have a function for joining ChatRooms', () => {
+		let roomToJoin = new ChatRoom('id', 'name', 6);
+		let joinSpy = spyOn(chatRoomsComponent.state, 'joinRoom').and.callFake((room: ChatRoom) => {
+			return Promise.resolve(true);
+		});
+
+		chatRoomsComponent.joinRoom(roomToJoin);
+
+		expect(typeof chatRoomsComponent.joinRoom).toEqual('function');
+		expect(joinSpy).toHaveBeenCalledWith(roomToJoin);
+	});
+
+	it('should have a function for leaving the current ChatRoom', () => {
+		let leaveRoomSpy = spyOn(chatRoomsComponent.state, 'leaveCurrentRoom').and.callThrough();
+
+		chatRoomsComponent.leaveRoom();
+
+		expect(typeof chatRoomsComponent.leaveRoom).toEqual('function');
+		expect(leaveRoomSpy).toHaveBeenCalled();
+	});
+
+	it('should have a function that returns the current ChatRoom', () => {
+		let rm = new ChatRoom('id', 'name', 6);
+		chatRoomsComponent._setCurrentRoom(rm);
+		expect(typeof chatRoomsComponent.getCurrentRoom).toEqual('function');
+		expect(chatRoomsComponent.getCurrentRoom()).toBeDefined();
+		expect(chatRoomsComponent.getCurrentRoom()).toEqual(rm);
+	});
+
+	it('should have a function that returns an array of Users in the current ChatRoom corresponding with the StateService', () => {
+		let rm = new ChatRoom('id', 'name', 6);
+		chatRoomsComponent._setCurrentRoom(rm);
+		expect(typeof chatRoomsComponent.getUsersInCurrentRoom).toEqual('function');
+		expect(chatRoomsComponent.getUsersInCurrentRoom()).toBeDefined();
+		expect(chatRoomsComponent.getUsersInCurrentRoom()).toEqual(rm.getUsers());
+	});
+
+	it('should have a function that returns the ChatRoom list', () => {
+		chatRoomsComponent._setRoomsList([ new ChatRoom('id', 'name', 6) ]);
+		expect(typeof chatRoomsComponent.getRoomsList).toEqual('function');
+		expect(chatRoomsComponent.getRoomsList()).toEqual(chatRoomsComponent._getRoomsList());
+	});
+
+	// Init
 	it('should create', () => {
 		expect(chatRoomsComponent).toBeTruthy();
 		expect(hostComponent).toBeTruthy();
@@ -47,37 +96,72 @@ describe('ChatRoomsComponent', () => {
 		expect(chatRoomsComponent.state).toEqual(hostComponent.getState());
 	});
 
-	it('should have an array containing chat room data', () => {
+	it('should have an array containing ChatRoom list data', () => {
 		expect(Array.isArray(chatRoomsComponent._getRoomsList())).toBeTrue();
 	});
 
-	it('should subscribe to the rooms list of the state service on init', () => {
-		chatRoomsComponent._setSubscriptions([ new Subscription(), new Subscription() ]);
+	it('should have an array containing subscriptions', () => {
+		expect(Array.isArray(chatRoomsComponent._getSubscriptions())).toBeTrue();
+	});
 
+	// Lifecycle
+	it('should subscribe to the ChatRooms list of the state service on init and the subscription to the corresponding component/class array', () => {
 		let roomsListSubSpy = spyOn(chatRoomsComponent.state, 'roomsList').and.callFake(() => {
 			return new Observable((sub: Subscriber<Array<any>>) => {
 				sub.next([ new ChatRoom('id1', 'roomA', 6), new ChatRoom('id2', 'roomB', 6) ]);
 			});
 		});
-		while (chatRoomsComponent._getSubscriptions.length)
-			chatRoomsComponent._getSubscriptions().shift().unsubscribe();
+
+		chatRoomsComponent.unsubLocalSubscriptions();
 		chatRoomsComponent.ngOnInit();
 
 		expect(roomsListSubSpy).toHaveBeenCalled();
 		expect(chatRoomsComponent._getSubscriptions().length).toBeGreaterThan(0);
 	});
 
-	it('should shift all subscriptions from the subscriptions array and call unsubscribe each of them on destroy', () => {
-		chatRoomsComponent._setSubscriptions([ new Subscription(), new Subscription() ]);
+	it('should subscribe to the current ChatRoom via the state service on init and the subscription to the corresponding component/class array', () => {
+		let roomsListSubSpy = spyOn(chatRoomsComponent.state, 'currentRoom').and.callFake(() => {
+			return new Observable((sub: Subscriber<ChatRoom>) => {
+				let rm = new ChatRoom('id', 'name', 6);
+				sub.next(rm);
+			});
+		});
 
+		chatRoomsComponent.unsubLocalSubscriptions();
+		chatRoomsComponent.ngOnInit();
+
+		expect(roomsListSubSpy).toHaveBeenCalled();
+		expect(chatRoomsComponent._getSubscriptions().length).toBeGreaterThan(0);
+	});
+
+	it('should unsubscribe local subscriptions on destroy', () => {
+		let unsubSpy = spyOn(chatRoomsComponent, 'unsubLocalSubscriptions').and.callThrough();
 		chatRoomsComponent.ngOnDestroy();
 
-		expect(chatRoomsComponent._getSubscriptions().length == 0).toBeTrue();
+		expect(unsubSpy).toHaveBeenCalled();
 	});
 
-	it('should have a function for joining chat rooms', () => {
-		expect(typeof chatRoomsComponent.joinRoom).toEqual('function');
-	});
+	// State
+	it('should have a function for unsubscribing from all local subscriptions', () => {
+		let sub1 = new Subscription();
+		let sub2 = new Subscription();
+		let sub3 = new Subscription();
 
-	
+		let sub1Spy = spyOn(sub1, 'unsubscribe').and.callThrough();
+		let sub2Spy = spyOn(sub2, 'unsubscribe').and.callThrough();
+		let sub3Spy = spyOn(sub3, 'unsubscribe').and.callThrough();
+
+		chatRoomsComponent._setSubscriptions([ sub1, sub2, sub3 ]);
+
+		let initCount = chatRoomsComponent._getSubscriptions().length;
+
+		chatRoomsComponent.unsubLocalSubscriptions();
+
+		expect(typeof chatRoomsComponent.unsubLocalSubscriptions).toEqual('function');
+		expect(initCount).toEqual(3);
+		expect(chatRoomsComponent._getSubscriptions().length).toEqual(0);
+		expect(sub1Spy).toHaveBeenCalled();
+		expect(sub2Spy).toHaveBeenCalled();
+		expect(sub3Spy).toHaveBeenCalled();
+	});
 });

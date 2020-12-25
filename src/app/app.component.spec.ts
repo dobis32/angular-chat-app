@@ -3,7 +3,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { AppComponent } from './app.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { StateService } from './services/state.service';
-import { Observable, Subscription, Observer } from 'rxjs';
+
 describe('AppComponent', () => {
 	let fixture: ComponentFixture<AppComponent>;
 	let app: AppComponent;
@@ -23,8 +23,6 @@ describe('AppComponent', () => {
 		expect(typeof app.getStateService).toEqual('function');
 		expect(app.getStateService()).toEqual(app._getStateService());
 	});
-
-	it('should have a function that returns the current');
 
 	// Init
 	it('should create the app', () => {
