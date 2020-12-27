@@ -344,8 +344,10 @@ describe('StateService', () => {
 		let updateCurrentRoomSubsSpy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
 		let initCurrentRoom = service._getCurrentRoom();
 		let d = new Date();
+		let rm = new ChatRoom('id', 'name', 6);
 		service._setChatLog([ new ChatMessage('user', 'someID', d, 'message') ]);
-		service.updateCurrentRoom(new ChatRoom('id', 'name', 6));
+		service._setRoomsList([ rm ]);
+		service.updateCurrentRoom(rm.getRoomID());
 
 		expect(typeof service.updateCurrentRoom).toEqual('function');
 		expect(service._getCurrentRoom() == initCurrentRoom).toBeFalse();
@@ -358,8 +360,9 @@ describe('StateService', () => {
 		let updateRoomSpy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
 		let resetChatLogSpy = spyOn(service, 'resetChatLog').and.callThrough();
 		let room = new ChatRoom('id1', 'Room A', 2);
-
-		service.updateCurrentRoom(room);
+		
+		service._setRoomsList([ room ]);
+		service.updateCurrentRoom(room.getRoomID());
 
 		expect(typeof service.updateRoomsList).toEqual('function');
 		expect(updateRoomSpy).toHaveBeenCalled();

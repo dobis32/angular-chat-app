@@ -1,0 +1,17 @@
+<div class="modal-card" (click)="stopPropagation($event)">
+    <h4>Create New Room</h4>
+    <form [formGroup]="form" (ngSubmit)="submitForm(form)">
+        <div class="form-row">
+            <input type="text" name="name" id="room-name-input" formControlName="name">
+        </div>
+        <div class="form-row">
+            <input type="number" name="capacity" id="room-capacity-input" formControlName="capacity">
+        </div>
+        <div class="form-row">
+            <input type="text" name="password" id="room-password-input" formControlName="password">
+        </div>
+        <div class="form-row">
+            <button>Create Room</button>
+        </div>
+    </form>
+</div>

@@ -63,6 +63,8 @@ export class StateService {
 		let roomSub = this.socket.listen('join').subscribe((data) => this.handleJoin(data));
 		this._socketSubscriptions.push(roomSub);
 
+		let createRoomSub = this.socket.listen('createRoom').subscribe((data) => this.handleRoomCreation(data)); // TODO: Unit test
+
 		let messageSub = this.socket.listen('message').subscribe((data) => this.handleMessage(data));
 		this._socketSubscriptions.push(messageSub);
 
@@ -77,25 +79,26 @@ export class StateService {
 	}
 
 	// Observer callbacks
-	handleInit(data: any) {
+	handleInit(data: any) { // TODO: update unit test
 		let { rooms } = data;
-		let parsedRoomsList = this.parseRoomsList(rooms);
-		this.updateRoomsList(parsedRoomsList);
+		this.parseAndUpdateRooms(rooms);
 	}
 
-	handleJoin(data: any) {
+	handleJoin(data: any) { // TODO: update unit test
 		let { id } = data;
-		console.log('HANDLE JOIN', data);
 		if (id) {
-			let roomInstance = this._roomsList.find((rm: ChatRoom) => {
-				return rm.getRoomID() == id;
-			});
-			if (roomInstance) {
-				this.updateCurrentRoom(roomInstance);
-			} else console.log('whoops, that room does not seem to exist...');
+			this.updateCurrentRoom(id);
 		} else {
 			this.leaveCurrentRoom();
 		}
+	}
+
+	handleRoomCreation(data: any) { // TODO: unit test
+		let { rooms, roomToJoin } = data;
+		if(rooms) {
+			this.parseAndUpdateRooms(rooms);
+			this.updateCurrentRoom(roomToJoin);
+		} else alert('Failed to create room');
 	}
 
 	handleMessage(data: any) {
@@ -129,9 +132,8 @@ export class StateService {
 		else this.login(name, id);
 	}
 
-	handleRoomsUpdate(roomsData: any) {
-		let parsedRoomsList = this.parseRoomsList(roomsData);
-		this.updateRoomsList(parsedRoomsList);
+	handleRoomsUpdate(roomsData: any) { // TODO: update unit test
+		this.parseAndUpdateRooms(roomsData);
 	}
 
 	// Notifications
@@ -292,6 +294,26 @@ export class StateService {
 	}
 
 	// Rooms
+	parseAndUpdateRooms(roomsData: Array<any>) { // TODO: Unit test
+		let parsedRoomsList = this.parseRoomsList(roomsData);
+		this.updateRoomsList(parsedRoomsList);
+	}
+
+	createRoom(): Promise<any> { // TODO: unit test
+		return new Promise((resolve, reject) => {
+			this.openModal('createRoom', (name: string, capacity: number, password: string) => {
+				if (this._roomsList.find((rm: ChatRoom) => rm.getName() == name)) 
+				{
+					console.log('A room with that name already exists!');
+					resolve(false);
+				} else {
+					this.socket.emit('createRoom', { name, capacity, password, userID: this._currentUser.getId() });
+					resolve(true);
+				}
+			});
+		});
+	}
+
 	joinRoom(room: ChatRoom): Promise<any> {
 		if (room.getPassword().length) return this.joinPrivateRoom(room);
 		else return this.joinPublicRoom(room);
@@ -343,11 +365,17 @@ export class StateService {
 		});
 	}
 
-	updateCurrentRoom(room: ChatRoom) {
-		this._currentRoom = room;
-		this.resetChatLog();
-		this.updateChatLogSubscribers();
-		this.updateCurrentRoomSubscribers();
+	updateCurrentRoom(roomID: string) { // TODO: update unit test
+		let roomInstance = this._roomsList.find((rm: ChatRoom) => {
+			return rm.getRoomID() == roomID;
+		});
+		if (roomInstance) {
+			this._currentRoom = roomInstance;
+			this.resetChatLog();
+			this.updateChatLogSubscribers();
+			this.updateCurrentRoomSubscribers();		
+		} else console.log('whoops, that room does not seem to exist...');
+		
 	}
 
 	leaveCurrentRoom(): void {

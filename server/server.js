@@ -212,6 +212,17 @@ io.on('connection', (socket) => {
 		}
 	});
 
+	socket.on('createRoom', ({name, capacity, password, userID}) => {
+		if(!name.length || !capacity) {
+			if (!password) password = '';
+			let room = roomsUtility.createRoom(name, capacity, password)
+			room.joinUser(userID);
+			socket.emit('createRoom', { rooms: roomsUtility.roomsListJSON(), roomToJoin: room.getID()});
+		} else {
+			socket.emit('createRoom', {});
+		}
+	});
+
 	socket.on('login', (data) => {
 		console.log('login event', data);
 		let { username, password } = data;

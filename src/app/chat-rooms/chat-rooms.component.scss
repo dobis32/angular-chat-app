@@ -8,6 +8,14 @@
 	h3 {
 		background-color: #888;
 	}
+
+	.create-room-button {
+		background-color: #f0f;
+		&:hover {
+			cursor: pointer;
+			background-color: #f00;
+		}
+	}
 }
 
 .chat-room-listing {

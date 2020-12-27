@@ -59,6 +59,10 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		this.state.leaveCurrentRoom();
 	}
 
+	createRoom(): void { // TODO: unit test
+		this.state.createRoom();
+	}
+
 	getCurrentRoom(): ChatRoom {
 		return this._currentRoom;
 	}

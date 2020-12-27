@@ -10,6 +10,7 @@ import { ChatRoomsComponent } from './chat-rooms/chat-rooms.component';
 import { StateDisplayComponent } from './dev/state-display/state-display.component';
 import { ModalComponent } from './modal/modal/modal.component';
 import { PasswordModalComponent } from './modal/components/password-modal/password-modal.component';
+import { CreateRoomModalComponent } from './modal/components/create-room-modal/create-room-modal.component';
 
 let componentDeclarations: Array<any> = [
 	AppComponent,
@@ -22,7 +23,7 @@ let componentDeclarations: Array<any> = [
 // if (isDevMode()) componentDeclarations.push(StateDisplayComponent);
 
 @NgModule({
-	declarations: [ ...componentDeclarations, ModalComponent, PasswordModalComponent ],
+	declarations: [ ...componentDeclarations, ModalComponent, PasswordModalComponent, CreateRoomModalComponent ],
 	imports: [ BrowserModule, AppRoutingModule, FormsModule, ReactiveFormsModule ],
 	providers: [],
 	bootstrap: [ AppComponent ]
