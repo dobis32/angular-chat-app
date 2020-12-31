@@ -1,4 +1,4 @@
 <div class="modal-wrapper" (click)="closeModal()">
-    <app-password-modal *ngIf="activeModalName == 'promptRoomPassword'" [cb]="modalCB" [roomName]="roomName" (submit)="closeModal()"></app-password-modal>
+    <app-password-modal *ngIf="activeModalName == 'promptRoomPassword'" [cb]="modalCB" (submit)="closeModal()"></app-password-modal>
     <app-create-room-modal *ngIf="activeModalName == 'createRoom'" [cb]="modalCB" (submit)="closeModal()"></app-create-room-modal>
 </div>

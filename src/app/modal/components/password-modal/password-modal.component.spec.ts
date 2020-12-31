@@ -6,7 +6,7 @@ import { By } from '@angular/platform-browser';
 
 @Component({
 	selector: `host-component`,
-	template: `<app-password-modal [roomName]="roomName" [cb]="cb" (submit)="handleSubmit()"></app-password-modal>`
+	template: `<app-password-modal [cb]="cb" (submit)="handleSubmit()"></app-password-modal>`
 })
 class TestHostComponent {
 	public roomName = 'test_room';
@@ -64,10 +64,6 @@ describe('PasswordModalComponent', () => {
 	// Init
 	it('should create', () => {
 		expect(passwordModalComponent).toBeTruthy();
-	});
-
-	it('should receive the room name string from the parent/host component', () => {
-		expect(passwordModalComponent.roomName).toEqual(hostComponent.roomName);
 	});
 
 	it('should receive the modal callback fucntion from the parent/host component', () => {

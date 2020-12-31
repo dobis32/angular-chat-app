@@ -70,7 +70,6 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 	}
 
 	getCurrentUser(): User {
-		// this will return a user class later
 		return this.currentUser;
 	}
 
@@ -81,10 +80,9 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 	sendChatMessage(fg: FormGroup) {
 		try {
 			if (!fg.valid) throw new Error('ERROR message was invalid!');
-			let message = new ChatMessage(
+			let message = this.createChatMessage(
 				this.currentUser.getName(),
 				this.currentUser.getId(),
-				new Date(),
 				fg.value.message
 			);
 			let result = this.state.sendMessage(message);
@@ -98,6 +96,10 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 			console.log(error);
 			this.chatError = true;
 		}
+	}
+
+	createChatMessage(name: string, id: string, message: string): ChatMessage {
+		return new ChatMessage(name, id, new Date(), message);
 	}
 
 	unsubLocalSubscriptions(): void {

@@ -11,20 +11,19 @@ import { Subscription } from 'rxjs';
 export class ModalComponent implements OnInit, OnDestroy {
 	@Input() state: StateService;
 	public activeModalName: string;
-	public roomName: string;
+	public currentRoom: ChatRoom;
 	public modalCB: Function;
 	private _currRoomSub: Subscription;
 	private _modalSub: Subscription;
 
 	constructor() {
 		this.activeModalName = '';
-		this.roomName = '';
 		this.modalCB = () => {};
 	}
 
 	ngOnInit(): void {
 		this._currRoomSub = this.state.currentRoom().subscribe((rm: ChatRoom) => {
-			if (rm) this.roomName = rm.getName();
+			if (rm) this.currentRoom = rm;
 		});
 
 		this._modalSub = this.state.modal().subscribe((data: any) => {
@@ -48,6 +47,14 @@ export class ModalComponent implements OnInit, OnDestroy {
 		else {
 			console.log(new Error('ERROR _getCurrRoomSub() is only available in dev mode.'));
 			return undefined;
+		}
+	}
+
+	_setCurrentRoom(rm: ChatRoom) {
+		if (isDevMode()) {
+			this.currentRoom = rm;
+		} else {
+			console.log(new Error('ERROR _setCurrentRoom() is only available in dev mode.'));
 		}
 	}
 

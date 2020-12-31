@@ -6,10 +6,13 @@
 </div>
 <div class="info-block">
     <h1>Current Room:</h1>
-    <h3>ID: {{getCurrentRoom().id}}</h3>
-    <h3>Name: {{getCurrentRoom().name}}</h3>
-    <h3>Capacity: {{getCurrentRoom().capacity}}</h3>
-    <h3>User: {{getCurrentRoom().users}}</h3>
-    <h3>Password: {{getCurrentRoom().password}}</h3>
+    <h3>ID: {{ roomID | async }}</h3>
+    <h3>Name: {{ roomName | async }}</h3>
+    <h3>Capacity: {{ roomCapacity | async }}</h3>
+    <h3>Owner: {{ roomDOMData | async }}</h3>
+    <h3>Users: <span  *ngFor="let user of roomUsers | async">{{user}}, </span></h3>
+    <h3>Password: {{ roomPassword | async }}</h3>
+    <h3>Admins: <span  *ngFor="let admin of roomAdmins | async">{{admin}}, </span></h3>
+    <h3>Bans: <span *ngFor="let ban of roomBans | async">{{ban}}, </span></h3>
 
 </div>

@@ -2,45 +2,43 @@ import { Component, Output, OnInit, EventEmitter, Input } from '@angular/core';
 import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
 
 @Component({
-  selector: 'app-create-room-modal',
-  templateUrl: './create-room-modal.component.html',
-  styleUrls: ['./create-room-modal.component.scss']
+	selector: 'app-create-room-modal',
+	templateUrl: './create-room-modal.component.html',
+	styleUrls: [ './create-room-modal.component.scss' ]
 })
 export class CreateRoomModalComponent implements OnInit {
-  @Input() roomName: string;
+	@Input() roomName: string;
 	@Input() cb: Function;
 
-  @Output() submit: EventEmitter<FormGroup> = new EventEmitter();
+	@Output() submit: EventEmitter<FormGroup> = new EventEmitter();
 
-  public form: FormGroup;
-  public submitting: boolean;
-  
-  constructor(private fb: FormBuilder) { 
-    this.form = this.fb.group({
-      name: new FormControl('', [ Validators.required ]),
-      capacity: new FormControl(2, [ Validators.min(2), Validators.max(12)]),
-      password: new FormControl('')
+	public form: FormGroup;
+	public submitting: boolean;
 
-    });
-    
-    this.submitting = false;
-  }
+	constructor(private fb: FormBuilder) {
+		this.form = this.fb.group({
+			name: new FormControl('', [ Validators.required ]),
+			capacity: new FormControl(2, [ Validators.min(2), Validators.max(12) ]),
+			password: new FormControl('')
+		});
 
-  ngOnInit(): void {
-
-  }
-
-  ngOnDestroy(): void {
-		if (!this.submitting) this.form.setValue({ name: '', capacity: 0, password: '' });
-		this.cb(this.form.value);
+		this.submitting = false;
 	}
 
-  submitForm(fg: FormGroup) {
-    console.log('FG | Valid:', fg.valid, 'Value:', fg.value);
-  }
+	ngOnInit(): void {}
 
-  stopPropagation(event: Event) {
-    event.stopPropagation();
-  }
+	ngOnDestroy(): void {
+		if (!this.submitting) this.form.setValue({ name: '', capacity: 0, password: '' });
+		let { name, capacity, password } = this.form.value;
+		this.cb(name, capacity, password);
+	}
 
+	submitForm(fg: FormGroup) {
+		this.submitting = true;
+		console.log('FG | Valid:', fg.valid, 'Value:', fg.value);
+	}
+
+	stopPropagation(event: Event) {
+		event.stopPropagation();
+	}
 }

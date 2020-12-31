@@ -1,6 +1,6 @@
 <div id="chat-rooms-container">
     <div *ngIf="getCurrentRoom() == undefined"> <!-- inactive room -->
-        <div class="create-room-button" (click)="createNewRoom()">Create Room</div>
+        <div class="create-room-button" (click)="createRoom()">Create Room</div>
         <h3>Rooms:</h3>
         <div *ngFor="let room of getRoomsList();" (click)="joinRoom(room)" class="chat-room-listing">{{room.getName()}} {{room.getUsers().length}}/{{room.getCapacity()}}</div>
     </div>

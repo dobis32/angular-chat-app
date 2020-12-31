@@ -153,7 +153,7 @@ describe('ChatLogComponent', () => {
 	it('should subscribe to the current ChatRoom from the StateService on init', () => {
 		chatLogComponent.unsubLocalSubscriptions();
 
-		let rm = new ChatRoom('id', 'name', 6);
+		let rm = new ChatRoom('id', 'name', 6, 'ownerID');
 		let testObservable = new Observable((sub: Observer<ChatRoom>) => {
 			sub.next(rm);
 		});

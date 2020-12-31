@@ -7,7 +7,6 @@ import { FormBuilder, FormGroup, FormControl } from '@angular/forms';
 	styleUrls: [ './password-modal.component.scss' ]
 })
 export class PasswordModalComponent implements OnInit, OnDestroy {
-	@Input() roomName: string;
 	@Input() cb: Function;
 
 	@Output() submit: EventEmitter<FormGroup> = new EventEmitter();

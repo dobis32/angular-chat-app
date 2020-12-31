@@ -44,7 +44,7 @@ describe('ChatRoomsComponent', () => {
 
 	// DOM-Related
 	it('should have a function for joining ChatRooms', () => {
-		let roomToJoin = new ChatRoom('id', 'name', 6);
+		let roomToJoin = new ChatRoom('id', 'name', 6, 'ownerID');
 		let joinSpy = spyOn(chatRoomsComponent.state, 'joinRoom').and.callFake((room: ChatRoom) => {
 			return Promise.resolve(true);
 		});
@@ -65,7 +65,7 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should have a function that returns the current ChatRoom', () => {
-		let rm = new ChatRoom('id', 'name', 6);
+		let rm = new ChatRoom('id', 'name', 6, 'ownerID');
 		chatRoomsComponent._setCurrentRoom(rm);
 		expect(typeof chatRoomsComponent.getCurrentRoom).toEqual('function');
 		expect(chatRoomsComponent.getCurrentRoom()).toBeDefined();
@@ -73,7 +73,7 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should have a function that returns an array of Users in the current ChatRoom corresponding with the StateService', () => {
-		let rm = new ChatRoom('id', 'name', 6);
+		let rm = new ChatRoom('id', 'name', 6, 'ownerID');
 		chatRoomsComponent._setCurrentRoom(rm);
 		expect(typeof chatRoomsComponent.getUsersInCurrentRoom).toEqual('function');
 		expect(chatRoomsComponent.getUsersInCurrentRoom()).toBeDefined();
@@ -81,9 +81,18 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should have a function that returns the ChatRoom list', () => {
-		chatRoomsComponent._setRoomsList([ new ChatRoom('id', 'name', 6) ]);
+		chatRoomsComponent._setRoomsList([ new ChatRoom('id', 'name', 6, 'ownerID') ]);
 		expect(typeof chatRoomsComponent.getRoomsList).toEqual('function');
 		expect(chatRoomsComponent.getRoomsList()).toEqual(chatRoomsComponent._getRoomsList());
+	});
+
+	it('should have a function for creating a new room that should call the corresponding function of the state', () => {
+		let createSpy = spyOn(chatRoomsComponent.state, 'createRoom').and.callThrough();
+
+		chatRoomsComponent.createRoom();
+
+		expect(typeof chatRoomsComponent.createRoom).toEqual('function');
+		expect(createSpy).toHaveBeenCalled();
 	});
 
 	// Init
@@ -108,7 +117,7 @@ describe('ChatRoomsComponent', () => {
 	it('should subscribe to the ChatRooms list of the state service on init and the subscription to the corresponding component/class array', () => {
 		let roomsListSubSpy = spyOn(chatRoomsComponent.state, 'roomsList').and.callFake(() => {
 			return new Observable((sub: Subscriber<Array<any>>) => {
-				sub.next([ new ChatRoom('id1', 'roomA', 6), new ChatRoom('id2', 'roomB', 6) ]);
+				sub.next([ new ChatRoom('id1', 'roomA', 6, 'ownerID1'), new ChatRoom('id2', 'roomB', 6, 'ownerID2') ]);
 			});
 		});
 
@@ -122,7 +131,7 @@ describe('ChatRoomsComponent', () => {
 	it('should subscribe to the current ChatRoom via the state service on init and the subscription to the corresponding component/class array', () => {
 		let roomsListSubSpy = spyOn(chatRoomsComponent.state, 'currentRoom').and.callFake(() => {
 			return new Observable((sub: Subscriber<ChatRoom>) => {
-				let rm = new ChatRoom('id', 'name', 6);
+				let rm = new ChatRoom('id', 'name', 6, 'ownerID');
 				sub.next(rm);
 			});
 		});

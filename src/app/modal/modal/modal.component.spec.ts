@@ -66,8 +66,10 @@ describe('ModalComponent', () => {
 		expect(typeof modalComponent.activeModalName).toEqual('string');
 	});
 
-	it('should have the active-room name as a string class/component variable', () => {
-		expect(typeof modalComponent.roomName).toEqual('string');
+	it('should have the current room as a class/component variable', () => {
+		modalComponent._setCurrentRoom(new ChatRoom('id', 'name', 6, 'ownerID'));
+		expect(modalComponent.currentRoom).toBeDefined();
+		expect(typeof modalComponent.currentRoom.getRoomID).toEqual('function');
 	});
 
 	it('should have the modal callback function as a function class/component variable', () => {
@@ -80,7 +82,7 @@ describe('ModalComponent', () => {
 
 	// Lifecycle
 	it('should subscribe to the current/active-room of the StateService', () => {
-		let mockChatRoom = new ChatRoom('id', 'name', 6);
+		let mockChatRoom = new ChatRoom('id', 'name', 6, 'ownerID');
 		let mockObservable = new Observable<ChatRoom>((sub: Observer<ChatRoom>) => {
 			sub.next(mockChatRoom);
 		});

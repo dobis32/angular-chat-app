@@ -22,9 +22,9 @@ class RoomsUtility {
 	constructor(roomsListData) {
 		this.rooms = [];
 		roomsListData.forEach((data) => {
-			let { id, name, capacity, password, users } = data;
+			let { id, name, capacity, owner, password, users, admins, bans } = data;
 
-			this.rooms.push(new Room(id, name, capacity, password, users));
+			this.rooms.push(new Room(id, name, capacity, owner, password, users, admins, bans));
 		});
 	}
 
@@ -36,7 +36,7 @@ class RoomsUtility {
 	}
 
 	getRoomByID(id) {
-		return this.rooms.find((rm) => rm.id == id);
+		return this.rooms.find((rm) => rm.getID() == id);
 	}
 
 	roomsListJSON() {
@@ -45,6 +45,12 @@ class RoomsUtility {
 			retJSON.push(room.toJSON());
 		});
 		return retJSON;
+	}
+
+	createRoom(name, capacity, owner, pw) {
+		let newRoom = new Room(getNonce(), name, capacity, owner, pw);
+		this.rooms.push(newRoom);
+		return newRoom;
 	}
 }
 
@@ -102,13 +108,19 @@ class Room {
 	capacity;
 	password;
 	users;
+	admins;
+	bans;
+	owner;
 
-	constructor(id, name, capacity, password = '', users = []) {
+	constructor(id, name, capacity, owner, password = '', users = [], admins = [], bans = []) {
 		this.id = id;
 		this.name = name;
 		this.capacity = capacity;
+		this.owner = owner;
 		this.password = password;
 		this.users = users;
+		this.admins = admins;
+		this.bans = bans;
 	}
 
 	getID() {
@@ -133,7 +145,12 @@ class Room {
 	}
 
 	joinUser(userID) {
-		this.users.push(userID);
+		if (this.users.length < this.capacity) {
+			this.users.push(userID);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	toJSON() {
@@ -146,9 +163,12 @@ class Room {
 		let json = {
 			id: this.id,
 			name: this.name,
+			owner: this.owner,
 			capacity: this.capacity,
 			password: this.password,
-			users: userJSONData
+			users: userJSONData,
+			admins: this.admins,
+			bans: this.bans
 		};
 		return json;
 	}
@@ -162,14 +182,20 @@ let roomsList = [
 		name: 'room 1',
 		capacity: 6,
 		password: 'pw',
-		users: []
+		users: [],
+		admins: [],
+		bans: [],
+		owner: dennyID
 	},
 	{
 		id: getNonce(),
 		name: 'room 2',
 		capacity: 4,
 		password: '',
-		users: []
+		users: [],
+		admins: [],
+		bans: [],
+		owner: dennyID
 	}
 ];
 
@@ -182,26 +208,29 @@ io.on('connection', (socket) => {
 	console.log('new user connected');
 
 	socket.on('join', ({ user, room }) => {
-		if (user && room) {
-			console.log(`USER [${user}] JOINING ROOM [${room}]`);
-			let roomInstance = roomsUtility.getRoomByID(room);
-			let userInstance = usersUtility.getUserByID(user);
-			if (!roomInstance || roomInstance.isFull() || !userInstance) {
-				// room is full/doesn't exist or user doesn't exist
-				socket.emit('notify', { notification: 'error', message: 'Failed to join room' });
-			} else {
-				roomInstance.joinUser(user);
-				socket.join(room);
-				socket.to(room).emit('notify', { notification: 'join', user: userInstance.getName() });
-				io.emit('roomsUpdate', roomsUtility.roomsListJSON());
-				socket.emit('join', { id: roomInstance.getID() });
+		try {
+			if (user && room) {
+				let roomInstance = roomsUtility.getRoomByID(room);
+				let userInstance = usersUtility.getUserByID(user);
+				if (!roomInstance || roomInstance.isFull() || !userInstance)
+					throw new Error('Room is full or does not exist');
+				else {
+					let result = roomInstance.joinUser(user);
+					if (result) {
+						socket.join(room);
+						socket.to(room).emit('notify', { notification: 'join', user: userInstance.getName() });
+						io.emit('roomsUpdate', roomsUtility.roomsListJSON());
+						socket.emit('join', { id: roomInstance.getID() });
+					} else throw new Error('Room is full');
+				}
 			}
+		} catch (error) {
+			socket.emit('notify', { notification: 'error', message: `Failed to join room: ${error.message}` });
 		}
 	});
 
 	socket.on('leave', ({ user, room }) => {
 		if ((user, room)) {
-			console.log(`USER [${user}] LEAVING ROOM [${room}]`);
 			let roomInstance = roomsUtility.getRoomByID(room);
 			let userInstance = usersUtility.getUserByID(user);
 			roomInstance.removeUser(user);
@@ -212,19 +241,27 @@ io.on('connection', (socket) => {
 		}
 	});
 
-	socket.on('createRoom', ({name, capacity, password, userID}) => {
-		if(!name.length || !capacity) {
+	socket.on('createRoom', ({ name, capacity, password, userID }) => {
+		if (name.length > 0 && capacity > 0) {
 			if (!password) password = '';
-			let room = roomsUtility.createRoom(name, capacity, password)
-			room.joinUser(userID);
-			socket.emit('createRoom', { rooms: roomsUtility.roomsListJSON(), roomToJoin: room.getID()});
+			let roomInstance = roomsUtility.createRoom(name, capacity, userID, password);
+			let result = roomInstance.joinUser(userID);
+			if (result) {
+				socket.join(roomInstance.getID());
+				let roomsListJSON = roomsUtility.roomsListJSON();
+				socket.emit('createRoom', { rooms: roomsListJSON, roomToJoin: roomInstance.getID() });
+				io.emit('roomsUpdate', roomsListJSON);
+			} else
+				socket.emit('notify', {
+					notification: 'error',
+					message: 'Room was created, but could not be joined at this time. Try to join again...'
+				});
 		} else {
 			socket.emit('createRoom', {});
 		}
 	});
 
 	socket.on('login', (data) => {
-		console.log('login event', data);
 		let { username, password } = data;
 		let user = usersUtility.loginUser(username, password);
 		if (user) socket.emit('login', { ...user.toJSON() });
@@ -235,7 +272,6 @@ io.on('connection', (socket) => {
 
 	// Listen for message
 	socket.on('message', (data) => {
-		console.log('Incoming message', data);
 		let { user, id, date, text, room } = data;
 		// let userInstance
 		socket.to(room).emit('message', { user, id, date, text });

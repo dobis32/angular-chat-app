@@ -63,7 +63,8 @@ export class StateService {
 		let roomSub = this.socket.listen('join').subscribe((data) => this.handleJoin(data));
 		this._socketSubscriptions.push(roomSub);
 
-		let createRoomSub = this.socket.listen('createRoom').subscribe((data) => this.handleRoomCreation(data)); // TODO: Unit test
+		let createRoomSub = this.socket.listen('createRoom').subscribe((data) => this.handleRoomCreation(data));
+		this._socketSubscriptions.push(createRoomSub);
 
 		let messageSub = this.socket.listen('message').subscribe((data) => this.handleMessage(data));
 		this._socketSubscriptions.push(messageSub);
@@ -79,12 +80,12 @@ export class StateService {
 	}
 
 	// Observer callbacks
-	handleInit(data: any) { // TODO: update unit test
+	handleInit(data: any) {
 		let { rooms } = data;
 		this.parseAndUpdateRooms(rooms);
 	}
 
-	handleJoin(data: any) { // TODO: update unit test
+	handleJoin(data: any) {
 		let { id } = data;
 		if (id) {
 			this.updateCurrentRoom(id);
@@ -93,9 +94,10 @@ export class StateService {
 		}
 	}
 
-	handleRoomCreation(data: any) { // TODO: unit test
+	handleRoomCreation(data: any) {
+		console.log('INCOMING ROOM CREATE EVENT', data);
 		let { rooms, roomToJoin } = data;
-		if(rooms) {
+		if (rooms) {
 			this.parseAndUpdateRooms(rooms);
 			this.updateCurrentRoom(roomToJoin);
 		} else alert('Failed to create room');
@@ -103,7 +105,6 @@ export class StateService {
 
 	handleMessage(data: any) {
 		console.log('INCOMING MESSAGE', data);
-		// This has WEAK testing
 		let { user, id, date, text } = data;
 		if (this._chatLog && this._currentRoom) this._chatLog.push(new ChatMessage(user, id, new Date(date), text));
 	}
@@ -132,8 +133,9 @@ export class StateService {
 		else this.login(name, id);
 	}
 
-	handleRoomsUpdate(roomsData: any) { // TODO: update unit test
+	handleRoomsUpdate(roomsData: any) {
 		this.parseAndUpdateRooms(roomsData);
+		this.updateCurrentRoom(this._currentRoom ? this._currentRoom.getRoomID() : '');
 	}
 
 	// Notifications
@@ -294,16 +296,15 @@ export class StateService {
 	}
 
 	// Rooms
-	parseAndUpdateRooms(roomsData: Array<any>) { // TODO: Unit test
+	parseAndUpdateRooms(roomsData: Array<any>) {
 		let parsedRoomsList = this.parseRoomsList(roomsData);
 		this.updateRoomsList(parsedRoomsList);
 	}
 
-	createRoom(): Promise<any> { // TODO: unit test
+	createRoom(): Promise<any> {
 		return new Promise((resolve, reject) => {
 			this.openModal('createRoom', (name: string, capacity: number, password: string) => {
-				if (this._roomsList.find((rm: ChatRoom) => rm.getName() == name)) 
-				{
+				if (this._roomsList.find((rm: ChatRoom) => rm.getName() == name)) {
 					console.log('A room with that name already exists!');
 					resolve(false);
 				} else {
@@ -365,17 +366,18 @@ export class StateService {
 		});
 	}
 
-	updateCurrentRoom(roomID: string) { // TODO: update unit test
+	updateCurrentRoom(roomID: string) {
+		this.resetChatLog();
 		let roomInstance = this._roomsList.find((rm: ChatRoom) => {
 			return rm.getRoomID() == roomID;
 		});
 		if (roomInstance) {
 			this._currentRoom = roomInstance;
-			this.resetChatLog();
 			this.updateChatLogSubscribers();
-			this.updateCurrentRoomSubscribers();		
-		} else console.log('whoops, that room does not seem to exist...');
-		
+			this.updateCurrentRoomSubscribers();
+		} else {
+			console.log('whoops, that room does not seem to exist...');
+		}
 	}
 
 	leaveCurrentRoom(): void {
@@ -383,6 +385,7 @@ export class StateService {
 			console.log('LEAVE ROOM', this._currentRoom);
 			this.socket.emit('leave', { user: this._currentUser.getId(), room: this._currentRoom.getRoomID() });
 			this._currentRoom = undefined;
+			this.resetChatLog();
 			this.updateCurrentRoomSubscribers();
 		}
 	}
@@ -395,7 +398,7 @@ export class StateService {
 
 	parseRoomsList(unparsedList: Array<any>): Array<ChatRoom> {
 		let parsedList = new Array();
-		unparsedList.forEach(({ id, name, capacity, users, password }) => {
+		unparsedList.forEach(({ id, name, capacity, owner, users, password, admins, bans }) => {
 			try {
 				if (!id || !name || !capacity)
 					throw new Error('Failed to parse room; one or more required parameters is invalid');
@@ -404,7 +407,7 @@ export class StateService {
 					users.forEach(({ id, name }) => {
 						parsedUsers.push(new User(name, id));
 					});
-				let rm = new ChatRoom(id, name, capacity, parsedUsers, password);
+				let rm = new ChatRoom(id, name, capacity, owner, parsedUsers, password, admins, bans);
 				parsedList.push(rm);
 			} catch (error) {
 				console.log(error);
@@ -488,6 +491,7 @@ export class StateService {
 	}
 
 	resetChatLog(): void {
+		console.log('RESETTING CHAT LOG');
 		this._chatLog = new Array();
 	}
 

@@ -24,7 +24,7 @@ describe('StateService', () => {
 	});
 
 	// Socket
-	it('shouuld have the SocketService injected into it', () => {
+	it('should have the SocketService injected into it', () => {
 		expect(service._getSocketService()).toBeTruthy();
 	});
 
@@ -64,6 +64,14 @@ describe('StateService', () => {
 		expect(listenSpy).toHaveBeenCalledWith('roomsUpdate');
 	});
 
+	it('should listen to the "createRoom" event from the SocketService', () => {
+		let listenSpy = spyOn(service._getSocketService(), 'listen').and.callThrough();
+
+		service.resetSocketSubs();
+
+		expect(listenSpy).toHaveBeenCalledWith('createRoom');
+	});
+
 	it('should have a function to unsubscribe from all socket subscriptions', () => {
 		let subSpies = new Array();
 		service._getSocketSubscriptions().forEach((sub: Subscription) => {
@@ -92,26 +100,25 @@ describe('StateService', () => {
 
 	// Socket Event Handlers
 	it('shoulld have a function that handles "init" socket event', () => {
-		let parseSpy = spyOn(service, 'parseRoomsList').and.callThrough();
-		let updateRoomsSpy = spyOn(service, 'updateRoomsList').and.callThrough();
+		let parseAndUpdateSpy = spyOn(service, 'parseAndUpdateRooms').and.callThrough();
 		let unparsedRoomsList = [ { id: 'id1', name: 'denny', capacity: 6 }, { id: 'id2', name: 'hugh', capacity: 4 } ];
 		let devUserJSON = { id: 'id', name: 'denny' };
 
 		service.handleInit({ rooms: unparsedRoomsList, devUserJSON });
 
 		expect(typeof service.handleInit).toEqual('function');
-		expect(parseSpy).toHaveBeenCalled();
-		expect(updateRoomsSpy).toHaveBeenCalled();
+		expect(parseAndUpdateSpy).toHaveBeenCalledWith(unparsedRoomsList);
 	});
 
 	it('should have a function that handles "join" socket event', () => {
 		expect(typeof service.handleJoin).toEqual('function');
 	});
 
-	it('should leave the current room when the "join" event handler receives undefined room data', () => {
+	it('should leave the current room when the "join" event handler receives undefined room data upon "join" socket event', () => {
+		let dennyID = 'dennyID';
 		let data = {};
-		service._setCurrentRoom(new ChatRoom('id', 'name', 6));
-		service._setUser(new User('denny', 'dennyID'));
+		service._setCurrentRoom(new ChatRoom('id', 'name', 6, dennyID));
+		service._setUser(new User('denny', dennyID));
 		let leaveFnSpy = spyOn(service, 'leaveCurrentRoom').and.callThrough();
 
 		service.handleJoin(data);
@@ -119,18 +126,25 @@ describe('StateService', () => {
 		expect(leaveFnSpy).toHaveBeenCalled();
 	});
 
-	it('should look for and attempt to join target ChatRoom if room ID is received', () => {
+	it('should look for and attempt to join target ChatRoom if room ID is received upon "join" socket event', () => {
 		let updateSpy = spyOn(service, 'updateCurrentRoom').and.callThrough();
-		let data = { id: 'roomID', name: 'name', capacity: 6 };
+		let data = { id: 'roomID', name: 'name', capacity: 6, owner: 'ownerID' };
 
-		service._setRoomsList([ new ChatRoom(data.id, data.name, data.capacity) ]);
+		service._setRoomsList([ new ChatRoom(data.id, data.name, data.capacity, data.owner) ]);
 		service.handleJoin(data);
 
-		expect(updateSpy).toHaveBeenCalled();
+		expect(updateSpy).toHaveBeenCalledWith(data.id);
 	});
 
 	it('should have a fnction to handle the "message" socket event', () => {
+		let initCount = service._getChatLog().length;
+		let date = new Date();
+
+		service._setCurrentRoom(new ChatRoom('id', 'name', 6, 'denny'));
+		service.handleMessage({ user: 'denny', id: 'dennyID', date: date.toDateString(), text: 'hello world' });
+
 		expect(typeof service.handleMessage).toEqual('function');
+		expect(service._getChatLog().length).toBeGreaterThan(initCount);
 	});
 
 	it('should have a function for handling the "notification" socket event', () => {
@@ -156,6 +170,47 @@ describe('StateService', () => {
 		let joinData = { notification: 'join', user: 'denny' };
 		service.handleNotification(joinData);
 		expect(joinNotifySpy).toHaveBeenCalledWith(joinData.user);
+	});
+
+	it('should have a function to appropriately handle a "createRoom" socket event', () => {
+		let parseAndUpdateSpy = spyOn(service, 'parseAndUpdateRooms').and.callFake(() => {});
+		let updateCurrentRoomSpy = spyOn(service, 'updateCurrentRoom').and.callFake(() => {});
+
+		service.handleRoomCreation({ rooms: [], roomToJoin: 'foobar' });
+
+		expect(typeof service.handleRoomCreation).toEqual('function');
+		expect(parseAndUpdateSpy).toHaveBeenCalled();
+		expect(updateCurrentRoomSpy).toHaveBeenCalled();
+	});
+
+	it('should have a function to handle a "roomsUpdate" socket event', () => {
+		let parseAndUpdateSpy = spyOn(service, 'parseAndUpdateRooms').and.callFake(() => {});
+
+		service.handleRoomsUpdate([]);
+
+		expect(typeof service.handleRoomsUpdate).toEqual('function');
+		expect(parseAndUpdateSpy).toHaveBeenCalled();
+	});
+
+	it('should, upon handling a "roomsUpdate" socket event, update the current room with an empty string when there is no current room', () => {
+		let updateCurrentRoomSpy = spyOn(service, 'updateCurrentRoom').and.callFake(() => {});
+
+		service._setCurrentRoom(undefined);
+
+		service.handleRoomsUpdate([]);
+
+		expect(updateCurrentRoomSpy).toHaveBeenCalledWith('');
+	});
+
+	it('should, upon handling a "roomsUpdate" socket event, update the current room with a room id when there is no current room', () => {
+		let updateCurrentRoomSpy = spyOn(service, 'updateCurrentRoom').and.callFake(() => {});
+		let rm = new ChatRoom('id', 'name', 6, 'denny');
+
+		service._setCurrentRoom(rm);
+
+		service.handleRoomsUpdate([]);
+
+		expect(updateCurrentRoomSpy).toHaveBeenCalledWith(rm.getRoomID());
 	});
 
 	// Notification handlers
@@ -303,7 +358,7 @@ describe('StateService', () => {
 	it('should have a funciton for updating the chat rooms array and updates rooms list subscribers', () => {
 		let spy = spyOn(service, 'updateRoomsListSubscribers').and.callThrough();
 
-		let newRoomsList = [ new ChatRoom('id1', 'Room A', 2) ];
+		let newRoomsList = [ new ChatRoom('id1', 'Room A', 2, 'ownerID') ];
 
 		service.updateRoomsList(newRoomsList);
 
@@ -340,33 +395,23 @@ describe('StateService', () => {
 	});
 
 	it('should have a function for updating the current room that also resets the chat log array', () => {
+		let resetSpy = spyOn(service, 'updateCurrentRoom').and.callThrough();
 		let updateChatSubsSpy = spyOn(service, 'updateChatLogSubscribers').and.callThrough();
 		let updateCurrentRoomSubsSpy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
 		let initCurrentRoom = service._getCurrentRoom();
 		let d = new Date();
-		let rm = new ChatRoom('id', 'name', 6);
-		service._setChatLog([ new ChatMessage('user', 'someID', d, 'message') ]);
+		let uid = 'someID';
+		let rm = new ChatRoom('id', 'name', 6, uid);
+		service._setChatLog([ new ChatMessage('user', uid, d, 'message') ]);
 		service._setRoomsList([ rm ]);
 		service.updateCurrentRoom(rm.getRoomID());
 
 		expect(typeof service.updateCurrentRoom).toEqual('function');
+		expect(resetSpy).toHaveBeenCalled();
 		expect(service._getCurrentRoom() == initCurrentRoom).toBeFalse();
 		expect(updateChatSubsSpy).toHaveBeenCalled();
 		expect(updateCurrentRoomSubsSpy).toHaveBeenCalled();
 		expect(service._getChatLog().length).toEqual(0);
-	});
-
-	it('should have a funciton for updating the current ChatRoom, resets the chat log and updates current ChatRoom subscribers', () => {
-		let updateRoomSpy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
-		let resetChatLogSpy = spyOn(service, 'resetChatLog').and.callThrough();
-		let room = new ChatRoom('id1', 'Room A', 2);
-		
-		service._setRoomsList([ room ]);
-		service.updateCurrentRoom(room.getRoomID());
-
-		expect(typeof service.updateRoomsList).toEqual('function');
-		expect(updateRoomSpy).toHaveBeenCalled();
-		expect(resetChatLogSpy).toHaveBeenCalled();
 	});
 
 	it('should have a function for updating current room subscribers', () => {
@@ -392,11 +437,21 @@ describe('StateService', () => {
 		expect(typeof obs.subscribe).toEqual('function');
 	});
 
+	it('should have a function to leave the current ChatRoom wich should reset the chat log', () => {
+		service._setCurrentRoom(new ChatRoom('id', 'test room', 6, 'onwerID', [], '', [], []));
+
+		let spy = spyOn(service, 'resetChatLog').and.callThrough();
+		service.leaveCurrentRoom();
+
+		expect(typeof service.leaveCurrentRoom).toEqual('function');
+		expect(spy).toHaveBeenCalled();
+		expect(service._getCurrentRoom()).toEqual(undefined);
+	});
+
 	it('should have a function to leave the current ChatRoom and update corresponding observers', () => {
-		service._setCurrentRoom(new ChatRoom('id', 'test room', 6, [], ''));
+		service._setCurrentRoom(new ChatRoom('id', 'test room', 6, 'onwerID', [], '', [], []));
 
 		let spy = spyOn(service, 'updateCurrentRoomSubscribers').and.callThrough();
-
 		service.leaveCurrentRoom();
 
 		expect(typeof service.leaveCurrentRoom).toEqual('function');
@@ -441,6 +496,33 @@ describe('StateService', () => {
 		expect(parsed1.length).toEqual(2);
 		expect(parsed2.length).toEqual(2);
 		expect(parsed3.length).toEqual(2);
+	});
+
+	it('should have a function for parsing and updating the rooms list', () => {
+		let parseSpy = spyOn(service, 'parseRoomsList').and.callThrough();
+		let updateSpy = spyOn(service, 'updateRoomsList').and.callThrough();
+		let mockData = [
+			{
+				id: 'id',
+				name: 'name',
+				owner: 'owner',
+				capacity: 6,
+				password: 'password',
+				users: [],
+				admins: [],
+				bans: []
+			}
+		];
+
+		service.parseAndUpdateRooms(mockData);
+
+		expect(typeof service.parseAndUpdateRooms).toEqual('function');
+		expect(parseSpy).toHaveBeenCalledWith(mockData);
+		expect(updateSpy).toHaveBeenCalled();
+	});
+
+	it('should have a function to create a new ChatRoom', () => {
+		expect(typeof service.createRoom).toEqual('function');
 	});
 
 	//Chat log
@@ -499,8 +581,9 @@ describe('StateService', () => {
 			return true;
 		});
 		let d = new Date();
-		let message = new ChatMessage('foo', 'someID', d, 'some text');
-		let room = new ChatRoom('id', 'name', 6);
+		let uid = 'someID';
+		let message = new ChatMessage('foo', uid, d, 'some text');
+		let room = new ChatRoom('id', 'name', 6, uid);
 		service._setCurrentRoom(room);
 		service.sendMessage(message);
 
