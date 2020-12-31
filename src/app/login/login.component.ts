@@ -1,6 +1,6 @@
 import { Component, OnInit, Input, isDevMode } from '@angular/core';
 import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
-import { StateService } from '../services/state.service';
+import { StateService } from '../services/state/state.service';
 
 @Component({
 	selector: 'app-login',

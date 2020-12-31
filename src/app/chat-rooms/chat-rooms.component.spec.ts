@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, DebugElement } from '@angular/core';
 import { ChatRoomsComponent } from './chat-rooms.component';
-import { StateService } from '../services/state.service';
+import { StateService } from '../services/state/state.service';
 import { By } from '@angular/platform-browser';
 import { Subscriber, Observable, Subscription } from 'rxjs';
 import { ChatRoom } from '../util/chatRoom';
+import { User } from '../util/user';
 
 @Component({
 	selector: `host-component`,
@@ -45,18 +46,18 @@ describe('ChatRoomsComponent', () => {
 	// DOM-Related
 	it('should have a function for joining ChatRooms', () => {
 		let roomToJoin = new ChatRoom('id', 'name', 6, 'ownerID');
-		let joinSpy = spyOn(chatRoomsComponent.state, 'joinRoom').and.callFake((room: ChatRoom) => {
+		let joinSpy = spyOn(chatRoomsComponent.state.room, 'joinRoom').and.callFake((user: User, room: ChatRoom) => {
 			return Promise.resolve(true);
 		});
 
 		chatRoomsComponent.joinRoom(roomToJoin);
 
 		expect(typeof chatRoomsComponent.joinRoom).toEqual('function');
-		expect(joinSpy).toHaveBeenCalledWith(roomToJoin);
+		expect(joinSpy).toHaveBeenCalled();
 	});
 
 	it('should have a function for leaving the current ChatRoom', () => {
-		let leaveRoomSpy = spyOn(chatRoomsComponent.state, 'leaveCurrentRoom').and.callThrough();
+		let leaveRoomSpy = spyOn(chatRoomsComponent.state.room, 'leaveCurrentRoom').and.callThrough();
 
 		chatRoomsComponent.leaveRoom();
 
@@ -115,7 +116,7 @@ describe('ChatRoomsComponent', () => {
 
 	// Lifecycle
 	it('should subscribe to the ChatRooms list of the state service on init and the subscription to the corresponding component/class array', () => {
-		let roomsListSubSpy = spyOn(chatRoomsComponent.state, 'roomsList').and.callFake(() => {
+		let roomsListSubSpy = spyOn(chatRoomsComponent.state.room, 'roomsList').and.callFake(() => {
 			return new Observable((sub: Subscriber<Array<any>>) => {
 				sub.next([ new ChatRoom('id1', 'roomA', 6, 'ownerID1'), new ChatRoom('id2', 'roomB', 6, 'ownerID2') ]);
 			});
@@ -129,7 +130,7 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should subscribe to the current ChatRoom via the state service on init and the subscription to the corresponding component/class array', () => {
-		let roomsListSubSpy = spyOn(chatRoomsComponent.state, 'currentRoom').and.callFake(() => {
+		let roomsListSubSpy = spyOn(chatRoomsComponent.state.room, 'currentRoom').and.callFake(() => {
 			return new Observable((sub: Subscriber<ChatRoom>) => {
 				let rm = new ChatRoom('id', 'name', 6, 'ownerID');
 				sub.next(rm);

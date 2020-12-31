@@ -1,7 +1,7 @@
 import { Component, DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { StateService } from '../services/state.service';
+import { StateService } from '../services/state/state.service';
 import { LoginComponent } from './login.component';
 import { By } from '@angular/platform-browser';
 

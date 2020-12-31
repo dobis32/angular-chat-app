@@ -2,7 +2,7 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { AppComponent } from './app.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { StateService } from './services/state.service';
+import { StateService } from './services/state/state.service';
 
 describe('AppComponent', () => {
 	let fixture: ComponentFixture<AppComponent>;
@@ -54,7 +54,7 @@ describe('AppComponent', () => {
 	});
 
 	it('should get the modal-active status from the state and assign it to the corresponding class variable', () => {
-		let modalActiveStatusSpy = spyOn(app._getStateService(), 'modalActiveStatus').and.callThrough();
+		let modalActiveStatusSpy = spyOn(app._getStateService().modal, 'modalActiveStatus').and.callThrough();
 
 		app.ngOnInit();
 

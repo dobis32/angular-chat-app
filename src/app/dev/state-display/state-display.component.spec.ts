@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, DebugElement } from '@angular/core';
 import { StateDisplayComponent } from './state-display.component';
-import { StateService } from '../../services/state.service';
+import { StateService } from '../../services/state/state.service';
 import { By } from '@angular/platform-browser';
 
 @Component({

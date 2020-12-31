@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, isDevMode } from '@angular/core';
-import { StateService } from './services/state.service';
+import { StateService } from './services/state/state.service';
 import { Subscription, Observable } from 'rxjs';
 
 @Component({
@@ -18,7 +18,7 @@ export class AppComponent implements OnInit, OnDestroy {
 	ngOnInit(): void {
 		this.loggedInBool = this.state.loggedInStatus();
 
-		this.modalActiveState = this.state.modalActiveStatus();
+		this.modalActiveState = this.state.modal.modalActiveStatus();
 	}
 
 	ngOnDestroy(): void {}

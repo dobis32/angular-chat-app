@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, DebugElement } from '@angular/core';
 import { ModalComponent } from './modal.component';
-import { StateService } from '../../services/state.service';
+import { StateService } from '../../services/state/state.service';
 import { By } from '@angular/platform-browser';
 import { ChatRoom } from 'src/app/util/chatRoom';
 import { Observable, Observer } from 'rxjs';
@@ -41,7 +41,7 @@ describe('ModalComponent', () => {
 		modalComponent = modalDebugElement.componentInstance;
 
 		modalComponent.ngOnDestroy();
-		modalSubSpy = spyOn(modalComponent.state, 'modal').and.callFake(() => {
+		modalSubSpy = spyOn(modalComponent.state.modal, 'state').and.callFake(() => {
 			return mockModalObservable;
 		});
 		modalComponent.ngOnInit();
@@ -86,7 +86,7 @@ describe('ModalComponent', () => {
 		let mockObservable = new Observable<ChatRoom>((sub: Observer<ChatRoom>) => {
 			sub.next(mockChatRoom);
 		});
-		let subSpy = spyOn(modalComponent.state, 'currentRoom').and.callFake(() => {
+		let subSpy = spyOn(modalComponent.state.room, 'currentRoom').and.callFake(() => {
 			return mockObservable;
 		});
 

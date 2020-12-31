@@ -1,6 +1,6 @@
 import { Component, OnInit, Input, isDevMode, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { StateService } from '../services/state.service';
+import { StateService } from '../services/state/state.service';
 import { ChatRoom } from '../util/chatRoom';
 import { User } from '../util/user';
 
@@ -13,6 +13,7 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	@Input() state: StateService;
 	private _roomsList: Array<any>;
 	private _currentRoom: ChatRoom;
+	private _currentUser: User;
 	private _subscriptions: Array<Subscription>;
 
 	constructor() {
@@ -21,15 +22,21 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnInit(): void {
-		let roomListSub = this.state.roomsList().subscribe((roomsList: Array<any>) => {
+		let roomListSub = this.state.room.roomsList().subscribe((roomsList: Array<any>) => {
 			this._roomsList = roomsList;
 		});
 		this._subscriptions.push(roomListSub);
 
-		let currentRoomSub = this.state.currentRoom().subscribe((currentRoom: ChatRoom) => {
+		let currentRoomSub = this.state.room.currentRoom().subscribe((currentRoom: ChatRoom) => {
 			this._currentRoom = currentRoom;
 		});
 		this._subscriptions.push(currentRoomSub);
+
+		let currentUserSub = this.state.currentUser().subscribe((currentUser: User) => {
+			// TODO: unit test
+			this._currentUser = currentUser;
+		});
+		this._subscriptions.push(currentUserSub);
 	}
 
 	ngOnDestroy(): void {
@@ -45,8 +52,8 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	}
 
 	joinRoom(room: ChatRoom) {
-		this.state
-			.joinRoom(room)
+		this.state.room
+			.joinRoom(this._currentUser, room)
 			.then((result) => {
 				if (!result) alert('Failed to join room');
 			})
@@ -56,7 +63,7 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	}
 
 	leaveRoom(): void {
-		this.state.leaveCurrentRoom();
+		this.state.room.leaveCurrentRoom(this._currentUser);
 	}
 
 	createRoom(): void {

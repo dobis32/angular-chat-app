@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ChatLogComponent } from './chat-log.component';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Component, DebugElement } from '@angular/core';
-import { StateService } from '../services/state.service';
+import { StateService } from '../services/state/state.service';
 import { By } from '@angular/platform-browser';
 import { ChatMessage } from '../util/chatMessage';
 import { Observable, Subscriber, Subscription, Observer } from 'rxjs';
@@ -121,7 +121,7 @@ describe('ChatLogComponent', () => {
 		let testObservable = new Observable((sub: Observer<Array<ChatMessage>>) => {
 			sub.next(chatLog);
 		});
-		spyOn(chatLogComponent.state, 'chatLog').and.callFake(() => {
+		spyOn(chatLogComponent.state.chatLog, 'state').and.callFake(() => {
 			return testObservable;
 		});
 		let subSpy = spyOn(testObservable, 'subscribe').and.callThrough();
@@ -157,7 +157,7 @@ describe('ChatLogComponent', () => {
 		let testObservable = new Observable((sub: Observer<ChatRoom>) => {
 			sub.next(rm);
 		});
-		spyOn(chatLogComponent.state, 'currentRoom').and.callFake(() => {
+		spyOn(chatLogComponent.state.room, 'currentRoom').and.callFake(() => {
 			return testObservable;
 		});
 		let subSpy = spyOn(testObservable, 'subscribe').and.callThrough();

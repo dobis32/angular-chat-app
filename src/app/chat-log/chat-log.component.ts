@@ -2,7 +2,7 @@ import { Component, OnInit, Input, OnDestroy, isDevMode } from '@angular/core';
 import { FormGroup, FormBuilder, FormControl, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ChatMessage } from '../util/chatMessage';
-import { StateService } from '../services/state.service';
+import { StateService } from '../services/state/state.service';
 import { User } from '../util/User';
 import { ChatRoom } from '../util/chatRoom';
 
@@ -35,7 +35,7 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnInit() {
-		let chatSub = this.state.chatLog().subscribe((chatLog) => {
+		let chatSub = this.state.chatLog.state().subscribe((chatLog) => {
 			this.chatMessages = chatLog;
 		});
 		this.localSubscriptions.push(chatSub);
@@ -45,7 +45,7 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 		});
 		this.localSubscriptions.push(userSub);
 
-		let chatRoomSub = this.state.currentRoom().subscribe((room: ChatRoom) => {
+		let chatRoomSub = this.state.room.currentRoom().subscribe((room: ChatRoom) => {
 			this.currentRoom = room;
 			this.currentRoomBool = room ? true : false;
 		});

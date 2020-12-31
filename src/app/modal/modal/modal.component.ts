@@ -1,5 +1,5 @@
 import { Component, OnInit, Input, OnDestroy, isDevMode } from '@angular/core';
-import { StateService } from 'src/app/services/state.service';
+import { StateService } from 'src/app/services/state/state.service';
 import { ChatRoom } from 'src/app/util/chatRoom';
 import { Subscription } from 'rxjs';
 
@@ -22,11 +22,11 @@ export class ModalComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnInit(): void {
-		this._currRoomSub = this.state.currentRoom().subscribe((rm: ChatRoom) => {
+		this._currRoomSub = this.state.room.currentRoom().subscribe((rm: ChatRoom) => {
 			if (rm) this.currentRoom = rm;
 		});
 
-		this._modalSub = this.state.modal().subscribe((data: any) => {
+		this._modalSub = this.state.modal.state().subscribe((data: any) => {
 			let { modal, cb } = data;
 			this.activeModalName = modal;
 			this.modalCB = cb;
@@ -39,7 +39,7 @@ export class ModalComponent implements OnInit, OnDestroy {
 	}
 
 	closeModal() {
-		this.state.closeModal();
+		this.state.modal.closeModal();
 	}
 
 	_getCurrRoomSub(): Subscription {

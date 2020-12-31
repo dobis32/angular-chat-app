@@ -1,5 +1,5 @@
 import { Component, OnInit, Input, OnDestroy } from '@angular/core';
-import { StateService } from 'src/app/services/state.service';
+import { StateService } from 'src/app/services/state/state.service';
 import { Subscription, Observable, Observer } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { User } from 'src/app/util/user';
@@ -36,7 +36,7 @@ export class StateDisplayComponent implements OnInit, OnDestroy {
 		});
 		this._subscriptions.push(userSub);
 
-		this._currentRoom = this.state.currentRoom();
+		this._currentRoom = this.state.room.currentRoom();
 		this.roomID = this._currentRoom.pipe(map((rm: ChatRoom) => (rm ? rm.getRoomID() : 'no room')));
 		this.roomName = this._currentRoom.pipe(map((rm: ChatRoom) => (rm ? rm.getName() : 'no room')));
 		this.roomCapacity = this._currentRoom.pipe(map((rm: ChatRoom) => (rm ? rm.getCapacity() : 0)));
