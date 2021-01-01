@@ -56,6 +56,18 @@ describe('ChatRoomsComponent', () => {
 		expect(joinSpy).toHaveBeenCalled();
 	});
 
+	it('should use the app modal for prompting a user to enter a password when joining a private room', async () => {
+		let modalSpy = spyOn(chatRoomsComponent.state.modal, 'promptRoomPassword').and.callFake(() => {
+			return Promise.resolve('input');
+		});
+		let roomToJoin = new ChatRoom('id', 'name', 6, 'ownerID', [], 'password');
+		
+		await chatRoomsComponent.joinRoom(roomToJoin);
+
+		expect(typeof chatRoomsComponent.joinRoom).toEqual('function');
+		expect(modalSpy).toHaveBeenCalled();
+	});
+
 	it('should have a function for leaving the current ChatRoom', () => {
 		let leaveRoomSpy = spyOn(chatRoomsComponent.state.room, 'leaveCurrentRoom').and.callThrough();
 
@@ -88,12 +100,12 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should have a function for creating a new room that should call the corresponding function of the state', () => {
-		let createSpy = spyOn(chatRoomsComponent.state, 'createRoom').and.callThrough();
+		let openModalSpy = spyOn(chatRoomsComponent.state.modal, 'openModal').and.callThrough();
 
 		chatRoomsComponent.createRoom();
 
 		expect(typeof chatRoomsComponent.createRoom).toEqual('function');
-		expect(createSpy).toHaveBeenCalled();
+		expect(openModalSpy).toHaveBeenCalled();
 	});
 
 	// Init
@@ -115,7 +127,7 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	// Lifecycle
-	it('should subscribe to the ChatRooms list of the state service on init and the subscription to the corresponding component/class array', () => {
+	it('should subscribe to the ChatRooms list of the state service on init', () => {
 		let roomsListSubSpy = spyOn(chatRoomsComponent.state.room, 'roomsList').and.callFake(() => {
 			return new Observable((sub: Subscriber<Array<any>>) => {
 				sub.next([ new ChatRoom('id1', 'roomA', 6, 'ownerID1'), new ChatRoom('id2', 'roomB', 6, 'ownerID2') ]);
@@ -129,7 +141,7 @@ describe('ChatRoomsComponent', () => {
 		expect(chatRoomsComponent._getSubscriptions().length).toBeGreaterThan(0);
 	});
 
-	it('should subscribe to the current ChatRoom via the state service on init and the subscription to the corresponding component/class array', () => {
+	it('should subscribe to the current ChatRoom via the state service on init', () => {
 		let roomsListSubSpy = spyOn(chatRoomsComponent.state.room, 'currentRoom').and.callFake(() => {
 			return new Observable((sub: Subscriber<ChatRoom>) => {
 				let rm = new ChatRoom('id', 'name', 6, 'ownerID');
@@ -144,11 +156,44 @@ describe('ChatRoomsComponent', () => {
 		expect(chatRoomsComponent._getSubscriptions().length).toBeGreaterThan(0);
 	});
 
+	it('should subscribe to the current User via the state service on init', () => {
+		let currenUserSpy = spyOn(chatRoomsComponent.state, 'currentUser').and.callFake(() => {
+			return new Observable((sub: Subscriber<User>) => {
+				let user = new User('name', 'id');
+				sub.next(user);
+			});
+		});
+
+		chatRoomsComponent.unsubLocalSubscriptions();
+		chatRoomsComponent.ngOnInit();
+
+		expect(currenUserSpy).toHaveBeenCalled();
+		expect(chatRoomsComponent._getCurrentUser()).toBeDefined();
+	});
+
 	it('should unsubscribe local subscriptions on destroy', () => {
 		let unsubSpy = spyOn(chatRoomsComponent, 'unsubLocalSubscriptions').and.callThrough();
 		chatRoomsComponent.ngOnDestroy();
 
 		expect(unsubSpy).toHaveBeenCalled();
+	});
+
+	// Other
+	it('should have a function that acts as the modal callback when creating a room, and should only create a room when a unique room name is passed', () => {
+		let findSpy = spyOn(chatRoomsComponent.state.room, 'findRoomByName').and.callThrough();
+		let createSpy = spyOn(chatRoomsComponent.state.room, 'createRoom').and.callFake(()=>{});
+		let mockRoomsList = [new ChatRoom('id1', 'some_name', 6 ,'dennyID')];
+		let mockUser = new User('mockUser', 'id');
+		
+		chatRoomsComponent._setCurrentUser(mockUser);
+		chatRoomsComponent.createRoomCallback('some_name', 6, 'some_password');
+		chatRoomsComponent.state.room._setRoomsList(mockRoomsList);
+		chatRoomsComponent.createRoomCallback('some_name', 6, 'some_password');
+		
+		expect(typeof chatRoomsComponent.createRoomCallback).toEqual('function');
+		expect(createSpy).toHaveBeenCalledTimes(1);
+		expect(findSpy).toHaveBeenCalled();
+
 	});
 
 	// State

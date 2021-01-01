@@ -184,32 +184,6 @@ export class StateService {
 		}
 	}
 
-	// Rooms TODO: change logic so that the component, that would be calling these functions, gets modal input first, then attempts to create/join room
-	createRoom(): Promise<any> {
-		return new Promise((resolve, reject) => {
-			this.modal.openModal('createRoom', (name: string, capacity: number, password: string) => {
-				if (this.room.findRoomByName(name)) {
-					console.log('A room with that name already exists!');
-					resolve(false);
-				} else {
-					this.room.createRoom(name, capacity, password, this._currentUser.getId());
-					resolve(true);
-				}
-			});
-		});
-	}
-
-	joinPrivateRoom(room: ChatRoom): Promise<any> {
-		return new Promise((resolve, reject) => {
-			this.modal.openModal('promptRoomPassword', (userInput: string) => {
-				if (!userInput.length) resolve(true);
-				else if (room.joinable(userInput)) {
-					resolve(true);
-				} else resolve(false);
-			});
-		});
-	}
-
 	// Messages
 	sendMessage(message: ChatMessage): boolean {
 		try {

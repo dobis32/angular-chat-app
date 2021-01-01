@@ -29,31 +29,12 @@ export class RoomStateModule {
 	}
 
 	currentRoomIsDefined(): boolean {
-		// TODO: unit test
 		if (this._currentRoom != undefined) return true;
 		else return false;
 	}
 
-	joinRoom(user: User, room: ChatRoom, password?: string): Promise<any> {
-		return new Promise((resolve, reject) => {
-			if (room.joinable(password)) {
-				this._socket.emit('join', { user: user.getId(), room: room.getRoomID() });
-				resolve(true);
-			} else resolve(false);
-		});
-	}
-
-	joinPublicRoom(user: User, room: ChatRoom): Promise<any> {
-		return new Promise((resolve, reject) => {
-			if (room.joinable()) {
-				this._socket.emit('join', { user: user.getId(), room: room.getRoomID() });
-				resolve(true);
-			} else resolve(false);
-		});
-	}
-
-	joinPrivateRoom(user: User, room: ChatRoom, password) {
-		this._socket.emit('join', { user: user.getId(), room: room.getRoomID() });
+	joinRoom(user: User, room: ChatRoom, password?: string) { 
+		if(room.joinable(password ? password : '')) this._socket.emit('join', { user: user.getId(), room: room.getRoomID() });
 	}
 
 	currentRoom(): Observable<ChatRoom> {
@@ -71,13 +52,15 @@ export class RoomStateModule {
 	}
 
 	getCurrentRoom(): ChatRoom {
-		// TODO unit test
 		return this._currentRoom;
 	}
 
 	findRoomByName(name: string): ChatRoom {
-		// TODO unit test
 		return this._roomsList.find((rm: ChatRoom) => rm.getName() == name);
+	}
+
+	findRoomByID(id: string): ChatRoom {
+		return this._roomsList.find((rm: ChatRoom) => rm.getRoomID() == id);
 	}
 
 	updateRoomsList(rooms: Array<any>): void {
@@ -92,11 +75,8 @@ export class RoomStateModule {
 	}
 
 	updateCurrentRoom(providedID?: string) {
-		// TODO update unit test
 		let roomID = providedID ? providedID : '';
-		let roomInstance = this._roomsList.find((rm: ChatRoom) => {
-			return rm.getRoomID() == roomID;
-		});
+		let roomInstance = this.findRoomByID(roomID);
 		if (roomInstance) {
 			this._currentRoom = roomInstance;
 			this.updateCurrentRoomSubscribers();

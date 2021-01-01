@@ -16,6 +16,18 @@ export class ModalStateModule {
 		this._modalActiveStatusSubscriber = undefined;
 	}
 
+	promptRoomPassword(): Promise<string> {
+		return new Promise((resolve, reject) => {
+			try {
+				this.openModal('promptRoomPassword', (userInput: string) => {
+					resolve(userInput);
+				});
+			} catch(error) {
+				reject(error);
+			}
+		});
+	}
+
 	state(): Observable<any> {
 		return new Observable((sub: Observer<any>) => {
 			sub.next({ modal: this._activeModalName, cb: this._modalCB });
@@ -34,6 +46,7 @@ export class ModalStateModule {
 		this._modalActiveStatus = true;
 		this._activeModalName = modal;
 		this._modalCB = cb;
+
 		this.refreshModalSubscriber();
 		this.refreshModalActiveStatusSubscriber();
 	}

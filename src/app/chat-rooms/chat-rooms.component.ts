@@ -16,6 +16,15 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	private _currentUser: User;
 	private _subscriptions: Array<Subscription>;
 
+	public createRoomCallback = (name: string, capacity: number, password: string) => {
+		if (this.state.room.findRoomByName(name)) {
+			console.log('A room with that name already exists!');
+			alert('failed to creat room');
+		} else {
+			this.state.room.createRoom(name, capacity, password, this._currentUser.getId());
+		}
+	}
+
 	constructor() {
 		this._roomsList = new Array();
 		this._subscriptions = new Array();
@@ -33,7 +42,6 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		this._subscriptions.push(currentRoomSub);
 
 		let currentUserSub = this.state.currentUser().subscribe((currentUser: User) => {
-			// TODO: unit test
 			this._currentUser = currentUser;
 		});
 		this._subscriptions.push(currentUserSub);
@@ -51,15 +59,17 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		return this._roomsList;
 	}
 
-	joinRoom(room: ChatRoom) {
-		this.state.room
-			.joinRoom(this._currentUser, room)
-			.then((result) => {
-				if (!result) alert('Failed to join room');
-			})
-			.catch((error) => {
+	async joinRoom(room: ChatRoom) {
+		let inputPassword = '';
+		if(room.getPassword().length) {
+			try{
+				inputPassword = await this.state.modal.promptRoomPassword();
+
+			} catch(error) {
 				console.log(error);
-			});
+			}
+		}
+		this.state.room.joinRoom(this._currentUser, room, inputPassword);
 	}
 
 	leaveRoom(): void {
@@ -67,15 +77,9 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	}
 
 	createRoom(): void {
-		this.state
-			.createRoom()
-			.then((result) => {
-				if (!result) alert('Failed to create room');
-			})
-			.catch((error) => {
-				console.log('Create room failed', error);
-			});
+		this.state.modal.openModal('createRoom', this.createRoomCallback);		
 	}
+
 
 	getCurrentRoom(): ChatRoom {
 		return this._currentRoom;
@@ -85,10 +89,25 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		return this._currentRoom.getUsers();
 	}
 
+	_setCurrentUser(user: User) {
+		if (isDevMode()) this._currentUser = user;
+		else {
+			console.log('Sorry _setCurrentUser() is only available in dev mode');
+		}
+	}
+
 	_setCurrentRoom(rm: ChatRoom) {
 		if (isDevMode()) this._currentRoom = rm;
 		else {
 			console.log('Sorry _setCurrentRoom() is only available in dev mode');
+		}
+	}
+
+	_getCurrentUser(): User {
+		if (isDevMode()) return this._currentUser;
+		else {
+			console.log('Sorry _getCurrentUser() is only available in dev mode');
+			return undefined;
 		}
 	}
 

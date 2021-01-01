@@ -18,7 +18,7 @@ export class ChatRoom {
 		users?: Array<User>,
 		password?: string,
 		admins?: Array<string>,
-		banned?: Array<string>
+		bans?: Array<string>
 	) {
 		this._id = id;
 		this._name = name;
@@ -27,7 +27,7 @@ export class ChatRoom {
 		this._users = users ? users : new Array();
 		this._password = password ? password : '';
 		this._admins = admins ? admins : new Array();
-		this._bans = banned ? banned : new Array();
+		this._bans = bans ? bans : new Array();
 	}
 
 	joinable(pw?: string) {
@@ -48,12 +48,8 @@ export class ChatRoom {
 		return this._id;
 	}
 
-	// setID(newID: string) {
-	// 	this._id = newID;
-	// }
-
 	getName(): string {
-		return this._name.length > 6 ? this._name.substring(0, 2) + '...' : this._name;
+		return this._name;
 	}
 
 	getOwner(): string {

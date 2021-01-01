@@ -333,11 +333,32 @@ describe('StateService', () => {
 		let modalName = 'test';
 		service.modal._setActiveModalName(modalName);
 		expect(service.modal._getActiveModalName()).toEqual(modalName);
+
+	});
+
+	it('should have a function that uses the app modal to prompt the user for a room password', () => {
+		let modalSpy = spyOn(service.modal, 'openModal').and.callThrough();
+	
+		service.modal.promptRoomPassword();
+		service.modal.closeModal();
+
+		expect(typeof service.modal.promptRoomPassword).toEqual('function');
+		expect(modalSpy).toHaveBeenCalled();
 	});
 
 	// Chat Rooms
 	it('should have an array for holding data about available chat rooms', () => {
 		expect(Array.isArray(service.room._getRoomsList())).toBeTrue();
+	});
+
+	it('should have a fucntion for determining if the current ChatRoom is defined', () => {
+		expect(typeof service.room.currentRoomIsDefined).toEqual('function');
+
+		service.room._setCurrentRoom(undefined);
+		expect(service.room.currentRoomIsDefined()).toBeFalse();
+		
+		service.room._setCurrentRoom(new ChatRoom('room', 'name', 6, 'owner'));
+		expect(service.room.currentRoomIsDefined()).toBeTrue();
 	});
 
 	it('should have a public method/function for exposing an Observalbe of the chat rooms array', () => {
@@ -390,22 +411,36 @@ describe('StateService', () => {
 		expect(Array.isArray(service.room._getCurrentRoomSubscribers())).toBeTrue();
 	});
 
-	it('should have a function for updating the current room that also resets the chat log array', () => {
-		let resetSpy = spyOn(service.room, 'updateCurrentRoom').and.callThrough();
+	it('should have a function for updating the current room', () => {
+		let findSpy = spyOn(service.room, 'findRoomByID').and.callThrough();
 		let updateCurrentRoomSubsSpy = spyOn(service.room, 'updateCurrentRoomSubscribers').and.callThrough();
 		let initCurrentRoom = service.room._getCurrentRoom();
-		let d = new Date();
 		let uid = 'someID';
 		let rm = new ChatRoom('id', 'name', 6, uid);
-		service.chatLog._setChatLog([ new ChatMessage('user', uid, d, 'message') ]);
+
 		service.room._setRoomsList([ rm ]);
 		service.room.updateCurrentRoom(rm.getRoomID());
 
 		expect(typeof service.room.updateCurrentRoom).toEqual('function');
-		expect(resetSpy).toHaveBeenCalled();
 		expect(service.room._getCurrentRoom() == initCurrentRoom).toBeFalse();
+		expect(findSpy).toHaveBeenCalled();
 		expect(updateCurrentRoomSubsSpy).toHaveBeenCalled();
-		expect(service.chatLog._getChatLog().length).toEqual(0);
+	});
+
+	it('should not update the current room if there is no corresponding room instance in the rooms list', () => {
+		let findSpy = spyOn(service.room, 'findRoomByID').and.callThrough();
+		let updateCurrentRoomSubsSpy = spyOn(service.room, 'updateCurrentRoomSubscribers').and.callThrough();
+		let initCurrentRoom = service.room._getCurrentRoom();
+		let uid = 'someID';
+		let rm = new ChatRoom('id', 'name', 6, uid);
+
+		service.room._setRoomsList([ rm ]);
+		service.room.updateCurrentRoom('foo');
+
+		expect(typeof service.room.updateCurrentRoom).toEqual('function');
+		expect(service.room._getCurrentRoom() == initCurrentRoom).toBeTrue();
+		expect(findSpy).toHaveBeenCalled();
+		expect(updateCurrentRoomSubsSpy).toHaveBeenCalledTimes(0);
 	});
 
 	it('should have a function for updating current room subscribers', () => {
@@ -504,8 +539,60 @@ describe('StateService', () => {
 		expect(updateSpy).toHaveBeenCalled();
 	});
 
-	it('should have a function to create a new ChatRoom', () => {
-		expect(typeof service.createRoom).toEqual('function');
+	it('should have a function for joining a ChatRoom that should emit a "join" socket event if said ChatRoom is joinable', () => {
+		let user = new User('denny', 'uid');
+		let room = new ChatRoom('rid', 'roomName', 6, 'uid');
+		let joinableSpy = spyOn(room, 'joinable').and.callThrough();
+		let emitSpy = spyOn(service._getSocketService(), 'emit').and.callFake(() => {
+			return true;
+		});
+
+		service.room.joinRoom(user, room);
+
+		expect(typeof service.room.joinRoom).toEqual('function');
+		expect(joinableSpy).toHaveBeenCalled();
+		expect(emitSpy).toHaveBeenCalledWith('join', { user: user.getId(), room: room.getRoomID()})
+		expect(room.joinable()).toBeTrue();
+	});
+
+	it('should prevent a "join" socket event from being emitted if a room is not joinable', () => {
+		let user = new User('denny', 'uid');
+		let pw = 'pw';
+		let room = new ChatRoom('rid', 'roomName', 6, 'uid', [], pw);
+		let joinableSpy = spyOn(room, 'joinable').and.callThrough();
+		let emitSpy = spyOn(service._getSocketService(), 'emit').and.callFake(() => {
+			return true;
+		});
+
+		service.room.joinRoom(user, room);
+
+		expect(joinableSpy).toHaveBeenCalled();
+		expect(emitSpy).toHaveBeenCalledTimes(0)
+		expect(room.joinable()).toBeFalse();
+	});
+
+	it('should have a function for getting the current ChatRoom instance', () => {
+		let room = new ChatRoom('id', 'name', 6, 'owner');
+		
+		service.room._setCurrentRoom(room);
+
+		expect(typeof service.room.getCurrentRoom).toEqual('function');
+		expect(service.room.getCurrentRoom()).toEqual(room);
+	});
+
+	it('should have a function to find a room instance by name', () => {
+		let roomToFind = new ChatRoom('id', 'name', 6, 'owner');
+		let rooms = [roomToFind,  new ChatRoom('id', 'foo', 6, 'owner'), new ChatRoom('id', 'bar', 6, 'owner')]
+		
+		service.room._setRoomsList(rooms);
+
+		let result1 = service.room.findRoomByName('fizz');
+		let result2 = service.room.findRoomByName(roomToFind.getName());
+
+		expect(typeof service.room.findRoomByName).toEqual('function');
+		expect(result1).toBeUndefined();
+		expect(result2).toEqual(roomToFind);
+		
 	});
 
 	//Chat log
