@@ -16,7 +16,7 @@ describe('StateService', () => {
 			providers: [ { provide: SocketService, useClass: MockSocketService } ]
 		});
 		service = TestBed.inject(StateService);
-		service._setUser(new User('Test user', 'test_nonce')); // login a user for convenience
+		service.user._setUser(new User('Test user', 'test_nonce')); // login a user for convenience
 	});
 
 	it('should be created', () => {
@@ -118,7 +118,7 @@ describe('StateService', () => {
 		let dennyID = 'dennyID';
 		let data = {};
 		service.room._setCurrentRoom(new ChatRoom('id', 'name', 6, dennyID));
-		service._setUser(new User('denny', dennyID));
+		service.user._setUser(new User('denny', dennyID));
 		let leaveFnSpy = spyOn(service.room, 'leaveCurrentRoom').and.callThrough();
 
 		service.handleJoin(data);
@@ -461,8 +461,8 @@ describe('StateService', () => {
 	});
 
 	it('should have a function for exposing an Observable of the index of the current room', () => {
-		let obs = service.currentRoomIndex();
-		expect(typeof service.currentRoomIndex).toEqual('function');
+		let obs = service.user.currentRoomIndex();
+		expect(typeof service.user.currentRoomIndex).toEqual('function');
 		expect(typeof obs.subscribe).toEqual('function');
 	});
 
@@ -604,6 +604,11 @@ describe('StateService', () => {
 		expect(Array.isArray(service.chatLog._getChatLogSubscribers()));
 	});
 
+	it('should have a function that can determine whether or not the chat log is defined', () => {
+		expect(typeof service.chatLog.chatLogIsDefined).toEqual('function');
+		expect(service.chatLog.chatLogIsDefined()).toBeTrue();
+	});
+
 	it('should have a public method/function for exposing an Observable of the ChatLog', () => {
 		let obs = service.chatLog.state();
 
@@ -655,30 +660,30 @@ describe('StateService', () => {
 		let message = new ChatMessage('foo', uid, d, 'some text');
 		let room = new ChatRoom('id', 'name', 6, uid);
 		service.room._setCurrentRoom(room);
-		service.sendMessage(message);
+		service.chatLog.sendMessage(message, room);
 
-		expect(typeof service.sendMessage).toEqual('function');
+		expect(typeof service.chatLog.sendMessage).toEqual('function');
 		expect(emitSpy).toHaveBeenCalled();
 		expect(emitSpy).toHaveBeenCalledWith('message', { ...message.toJSON(), room: room.getRoomID() });
 	});
 
 	// User
 	it('should have an array for current user subscribers/observers', () => {
-		expect(Array.isArray(service._getCurrentUserSubscribers()));
+		expect(Array.isArray(service.user._getCurrentUserSubscribers()));
 	});
 
 	it('should have an array for logged-in status subscribers/observers', () => {
-		expect(Array.isArray(service._getLoggedInStatusSubscribers()));
+		expect(Array.isArray(service.user._getLoggedInStatusSubscribers()));
 	});
 
 	it('should have the data for the current user', () => {
-		expect(service._getCurrentUser()).toBeDefined();
+		expect(service.user._getCurrentUser()).toBeDefined();
 	});
 
 	it('should have a public method/function for exposing an Observable of the CurrentUser', () => {
-		let obs = service.currentUser();
+		let obs = service.user.state();
 
-		expect(typeof service.currentUser).toEqual('function');
+		expect(typeof service.user.state).toEqual('function');
 		expect(typeof obs.subscribe).toEqual('function');
 	});
 
@@ -689,43 +694,34 @@ describe('StateService', () => {
 		let username = 'username';
 		let password = 'password';
 
-		let result = service.attemptLogin(username, password);
+		let result = service.user.attemptLogin(username, password);
 
-		expect(typeof service.attemptLogin).toEqual('function');
+		expect(typeof service.user.attemptLogin).toEqual('function');
 		expect(emitSpy).toHaveBeenCalledWith('login', { username, password });
 		expect(result).toBeTrue();
 	});
 
 	it('should have a function to log-in a user, which should update current-user subscribers and logged-in status subscribers', () => {
-		let updateCurrentUserSubSpy = spyOn(service, 'updateCurrentUserSubscribers');
-		let updateLoggedInSubSpy = spyOn(service, 'updateLoggedInSubscribers');
-		service.login('denny', 'id');
+		let updateCurrentUserSubSpy = spyOn(service.user, 'updateCurrentUserSubscribers');
+		let updateLoggedInSubSpy = spyOn(service.user, 'updateLoggedInSubscribers');
+		service.user.login('denny', 'id');
 
-		expect(typeof service.login).toEqual('function');
+		expect(typeof service.user.login).toEqual('function');
 		expect(updateCurrentUserSubSpy).toHaveBeenCalled();
 		expect(updateLoggedInSubSpy).toHaveBeenCalled();
 	});
 
 	it('should have a function to log-out the current user which should update current-user subscribers and logged-in-status subscribers', () => {
-		let updateCurrentUserSubSpy = spyOn(service, 'updateCurrentUserSubscribers');
-		let updateLoggedInSubSpy = spyOn(service, 'updateLoggedInSubscribers');
-		let result = service.attemptLogin('denny', 'password');
+		let updateCurrentUserSubSpy = spyOn(service.user, 'updateCurrentUserSubscribers');
+		let updateLoggedInSubSpy = spyOn(service.user, 'updateLoggedInSubscribers');
+		let result = service.user.attemptLogin('denny', 'password');
 
-		service.logout();
+		service.user.logout();
 
-		expect(typeof service.logout).toEqual('function');
+		expect(typeof service.user.logout).toEqual('function');
 		expect(result).toBeTrue();
 		expect(updateCurrentUserSubSpy).toHaveBeenCalled();
 		expect(updateLoggedInSubSpy).toHaveBeenCalled();
-		expect(service._getCurrentUser()).toBeFalsy();
-	});
-
-	it('should have the current user leave the current room (if any) when user logs out', () => {
-		let leaveRoomSpy = spyOn(service.room, 'leaveCurrentRoom').and.callThrough();
-
-		service.attemptLogin('denny', 'password');
-		service.logout();
-
-		expect(leaveRoomSpy).toHaveBeenCalled();
+		expect(service.user._getCurrentUser()).toBeFalsy();
 	});
 });

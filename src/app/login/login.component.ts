@@ -34,7 +34,7 @@ export class LoginComponent implements OnInit {
 		this.loginFailed = false;
 		console.log(username, password);
 		if (fg.valid) {
-			let result = this.state.attemptLogin(username, password);
+			let result = this.state.user.attemptLogin(username, password);
 			if (result) this.loginFailed = false;
 			else this.loginFailed = true;
 		} else this.loginFailed = true;

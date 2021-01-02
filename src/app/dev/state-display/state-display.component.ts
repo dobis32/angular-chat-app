@@ -31,7 +31,7 @@ export class StateDisplayComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnInit(): void {
-		let userSub = this.state.currentUser().subscribe((user) => {
+		let userSub = this.state.user.state().subscribe((user) => {
 			this._currentUser = user;
 		});
 		this._subscriptions.push(userSub);

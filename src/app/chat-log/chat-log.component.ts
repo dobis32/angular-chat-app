@@ -40,7 +40,7 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 		});
 		this.localSubscriptions.push(chatSub);
 
-		let userSub = this.state.currentUser().subscribe((user: User) => {
+		let userSub = this.state.user.state().subscribe((user: User) => {
 			this.currentUser = user;
 		});
 		this.localSubscriptions.push(userSub);
@@ -85,7 +85,7 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 				this.currentUser.getId(),
 				fg.value.message
 			);
-			let result = this.state.sendMessage(message);
+			let result = this.state.chatLog.sendMessage(message, this.currentRoom);
 			if (result) {
 				this.chatError = false;
 				fg.reset();
@@ -132,5 +132,10 @@ export class ChatLogComponent implements OnInit, OnDestroy {
 	_setCurrentUser(user: User) {
 		if (isDevMode()) this.currentUser = user;
 		else console.log(new Error('ERROR _setCurrentUser() is only available in dev mode'));
+	}
+
+	_setCurrentRoom(room: ChatRoom) {
+		if(isDevMode()) this.currentRoom = room;
+		else console.log(new Error('ERROR _setCurrentRoom() is only available in dev mode'));
 	}
 }

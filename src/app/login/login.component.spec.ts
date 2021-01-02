@@ -51,7 +51,7 @@ describe('LoginComponent', () => {
 	});
 
 	it('should prevent a login attempt if there is no username entered in the login form', () => {
-		let loginSpy = spyOn(loginComponent.state, 'attemptLogin').and.callThrough();
+		let loginSpy = spyOn(loginComponent.state.user, 'attemptLogin').and.callThrough();
 
 		loginComponent.loginForm.setValue({ username: '', password: 'foobar' });
 		loginComponent.login(loginComponent.loginForm);
@@ -61,7 +61,7 @@ describe('LoginComponent', () => {
 	});
 
 	it('should prevent a login attempt if there is no password entered in the login form', () => {
-		let loginSpy = spyOn(loginComponent.state, 'attemptLogin').and.callThrough();
+		let loginSpy = spyOn(loginComponent.state.user, 'attemptLogin').and.callThrough();
 
 		loginComponent.loginForm.setValue({ username: 'denny', password: '' });
 		loginComponent.login(loginComponent.loginForm);
@@ -73,7 +73,7 @@ describe('LoginComponent', () => {
 	it('should make a login attempt when there is a username and a password entered into the login form', () => {
 		let username = 'denny';
 		let password = 'foobar';
-		let loginSpy = spyOn(loginComponent.state, 'attemptLogin').and.callFake((username, password) => {
+		let loginSpy = spyOn(loginComponent.state.user, 'attemptLogin').and.callFake((username, password) => {
 			return true;
 		});
 

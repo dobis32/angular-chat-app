@@ -16,7 +16,7 @@ export class AppComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnInit(): void {
-		this.loggedInBool = this.state.loggedInStatus();
+		this.loggedInBool = this.state.user.loggedInStatus();
 
 		this.modalActiveState = this.state.modal.modalActiveStatus();
 	}
@@ -28,7 +28,8 @@ export class AppComponent implements OnInit, OnDestroy {
 	}
 
 	appUnload() {
-		this.state.logout();
+		this.state.room.leaveCurrentRoom(this.state.user.getCurrentUser());
+		this.state.user.logout();
 		this.state.unsubscribeAllSocketSubs();
 	}
 

@@ -41,7 +41,7 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		});
 		this._subscriptions.push(currentRoomSub);
 
-		let currentUserSub = this.state.currentUser().subscribe((currentUser: User) => {
+		let currentUserSub = this.state.user.state().subscribe((currentUser: User) => {
 			this._currentUser = currentUser;
 		});
 		this._subscriptions.push(currentUserSub);

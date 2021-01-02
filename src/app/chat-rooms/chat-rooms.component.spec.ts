@@ -157,7 +157,7 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should subscribe to the current User via the state service on init', () => {
-		let currenUserSpy = spyOn(chatRoomsComponent.state, 'currentUser').and.callFake(() => {
+		let currenUserSpy = spyOn(chatRoomsComponent.state.user, 'state').and.callFake(() => {
 			return new Observable((sub: Subscriber<User>) => {
 				let user = new User('name', 'id');
 				sub.next(user);

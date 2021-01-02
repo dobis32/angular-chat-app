@@ -7,6 +7,7 @@ import { User } from '../../util/user';
 import { ModalStateModule } from './modules/modal';
 import { RoomStateModule } from './modules/room';
 import { ChatLogStateModule } from './modules/chatlog';
+import { UserStateModule } from './modules/user';
 
 @Injectable({
 	providedIn: 'root'
@@ -16,14 +17,7 @@ export class StateService {
 	public modal: ModalStateModule;
 	public room: RoomStateModule;
 	public chatLog: ChatLogStateModule;
-
-	// Data
-	// private _chatLog: Array<ChatMessage>;
-	private _currentUser: User;
-
-	// Subcriber/Observer Arrays
-	private _currentUserSubscribers: Array<Observer<User>>;
-	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
+	public user: UserStateModule;
 
 	// Subscriptions
 	private _socketSubscriptions: Array<Subscription>;
@@ -33,14 +27,8 @@ export class StateService {
 		// Modules
 		this.modal = new ModalStateModule();
 		this.room = new RoomStateModule(this.socket);
-		this.chatLog = new ChatLogStateModule();
-
-		// Data
-		this._currentUser = undefined;
-
-		// Subcriber/Observer Arrays
-		this._currentUserSubscribers = new Array();
-		this._loggedInStatusSubscribers = new Array();
+		this.user = new UserStateModule(this.socket);
+		this.chatLog = new ChatLogStateModule(this.socket);
 
 		this._socketSubscriptions = new Array();
 
@@ -84,7 +72,7 @@ export class StateService {
 		if (id) {
 			this.room.updateCurrentRoom(id);
 		} else {
-			this.room.leaveCurrentRoom(this._currentUser);
+			this.room.leaveCurrentRoom(this.user.getCurrentUser());
 		}
 	}
 
@@ -124,8 +112,8 @@ export class StateService {
 
 	handleLogin(data: any) {
 		let { id, name, failed } = data;
-		if (failed) this.logout();
-		else this.login(name, id);
+		if (failed) this.user.logout();
+		else this.user.login(name, id);
 	}
 
 	handleRoomsUpdate(roomsData: any) {
@@ -185,100 +173,5 @@ export class StateService {
 	}
 
 	// Messages
-	sendMessage(message: ChatMessage): boolean {
-		try {
-			this.socket.emit('message', { ...message.toJSON(), room: this.room.getCurrentRoom().getRoomID() });
-			return true;
-		} catch (error) {
-			console.log('ERROR SENDING MESSAGE -- ', error.message);
-			return false;
-		}
-	}
-
-	// User
-	currentUser() {
-		return new Observable((subscriber: Observer<User>) => {
-			this._currentUserSubscribers.push(subscriber);
-			subscriber.next(this._currentUser);
-		});
-	}
-
-	currentRoomIndex(): Observable<number> {
-		return new Observable((subscriber: Observer<number>) => {});
-	}
-
-	login(name, id) {
-		this._currentUser = new User(name, id);
-		this.updateCurrentUserSubscribers();
-		this.updateLoggedInSubscribers();
-	}
-
-	logout() {
-		this.room.leaveCurrentRoom(this._currentUser);
-
-		this._currentUser = undefined;
-		this.updateCurrentUserSubscribers();
-		this.updateLoggedInSubscribers();
-	}
-
-	loggedInStatus(): Observable<boolean> {
-		return new Observable((subscriber: Observer<boolean>) => {
-			let bool = this._currentUser ? true : false;
-
-			this._loggedInStatusSubscribers.push(subscriber);
-			subscriber.next(bool);
-		});
-	}
-
-	updateCurrentUserSubscribers(): void {
-		this._currentUserSubscribers.forEach((sub) => {
-			sub.next(this._currentUser);
-		});
-	}
-
-	updateLoggedInSubscribers(): void {
-		this._loggedInStatusSubscribers.forEach((sub) => {
-			sub.next(this._currentUser ? true : false);
-		});
-	}
-
-	attemptLogin(username: string, password: string): boolean {
-		try {
-			this.socket.emit('login', { username, password });
-			return true;
-		} catch (error) {
-			return false;
-		}
-	}
-
-	_setUser(user: User) {
-		if (isDevMode()) this._currentUser = user;
-		else {
-			console.log(new Error('ERROR StateService._getCurrentUser() is only availabe in dev mode.'));
-		}
-	}
-
-	_getCurrentUser(): User {
-		if (isDevMode()) return this._currentUser;
-		else {
-			console.log(new Error('ERROR StateService._getCurrentUser() is only availabe in dev mode.'));
-			return undefined;
-		}
-	}
-
-	_getCurrentUserSubscribers(): Array<Observer<User>> {
-		if (isDevMode()) return this._currentUserSubscribers;
-		else {
-			console.log(new Error('ERROR StateService._getCurrentUserSubscribers() is only availabe in dev mode.'));
-			return undefined;
-		}
-	}
-
-	_getLoggedInStatusSubscribers(): Array<Observer<boolean>> {
-		if (isDevMode()) return this._loggedInStatusSubscribers;
-		else {
-			console.log(new Error('ERROR StateService._getLoggedInStatusSubscribers() is only availabe in dev mode.'));
-			return undefined;
-		}
-	}
+	
 }

@@ -79,6 +79,20 @@ describe('ChatLogComponent', () => {
 		expect(typeof chatLogComponent.currentRoomBool).toEqual('boolean');
 	});
 
+	it("should have a function for sending a ChatMessage", () => {
+		chatLogComponent._setCurrentUser(new User('denny', 'ID'));
+		chatLogComponent._setCurrentRoom(new ChatRoom('id', 'name', 6, 'owner'))
+		chatLogComponent.getChatForm().controls['message'].setValue('foobar');
+		let createMessageSpy = spyOn(chatLogComponent, 'createChatMessage').and.callThrough();
+		let sendMessageSpy = spyOn(chatLogComponent.state.chatLog, 'sendMessage').and.callFake(()=>{return true})
+
+		chatLogComponent.sendChatMessage(chatLogComponent.getChatForm());
+	
+		expect(typeof chatLogComponent.sendChatMessage);
+		expect(createMessageSpy).toHaveBeenCalled();
+		expect(sendMessageSpy).toHaveBeenCalled();
+	});
+
 	// Init
 	it('should create', () => {
 		expect(chatLogComponent).toBeTruthy();
@@ -139,7 +153,7 @@ describe('ChatLogComponent', () => {
 		let testObservable = new Observable((sub: Observer<User>) => {
 			sub.next(user);
 		});
-		spyOn(chatLogComponent.state, 'currentUser').and.callFake(() => {
+		spyOn(chatLogComponent.state.user, 'state').and.callFake(() => {
 			return testObservable;
 		});
 		let subSpy = spyOn(testObservable, 'subscribe').and.callThrough();

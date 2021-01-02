@@ -45,7 +45,7 @@ describe('AppComponent', () => {
 	});
 
 	it('should subscribe to the logged-in status of the StateService on init and add that subscription to the local subscriptions array', () => {
-		let loggedInBoolSpy = spyOn(app._getStateService(), 'loggedInStatus').and.callThrough();
+		let loggedInBoolSpy = spyOn(app._getStateService().user, 'loggedInStatus').and.callThrough();
 
 		app.ngOnInit();
 
@@ -67,8 +67,16 @@ describe('AppComponent', () => {
 		expect(typeof app.appUnload).toEqual('function');
 	});
 
-	it('should call the "logout" function of the state service when the window unloads', () => {
-		let logoutSpy = spyOn(app._getStateService(), 'logout').and.callFake(() => {});
+	it('should leave the current room upon window unloading', () => {
+		let leaveSpy = spyOn(app._getStateService().room, 'leaveCurrentRoom').and.callFake(() => {});
+
+		app.appUnload();
+
+		expect(leaveSpy).toHaveBeenCalled();
+	})
+
+	it('should logout the current user upon window unloading', () => {
+		let logoutSpy = spyOn(app._getStateService().user, 'logout').and.callFake(() => {});
 
 		app.appUnload();
 
