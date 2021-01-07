@@ -13,16 +13,6 @@ export class SocketService implements Socket {
 		this.socket = io(this.uri);
 	}
 
-	_getSocket() {
-		if (isDevMode()) return this.socket;
-		else console.log('This function can only be used in Dev mode');
-	}
-
-	_setSocket(socket: any) {
-		if (isDevMode()) this.socket = socket;
-		else console.log('This function can only be used in Dev mode');
-	}
-
 	listen(eventName: string) {
 		let obs = new Observable((subscriber: Subscriber<any>) => {
 			this.socket.on(eventName, (data: any) => {
@@ -45,5 +35,20 @@ export class SocketService implements Socket {
 	trigger(): boolean {
 		console.log(new Error('ERROR SocketService.trigger() is only available in MockSocketService'));
 		return false;
+	}
+
+	_setURI(uri: string) {
+		if (isDevMode()) this.uri = uri;
+		else console.log('This function can only be used in Dev mode');
+	}
+
+	_getSocket() {
+		if (isDevMode()) return this.socket;
+		else console.log('This function can only be used in Dev mode');
+	}
+
+	_setSocket(socket: any) {
+		if (isDevMode()) this.socket = socket;
+		else console.log('This function can only be used in Dev mode');
 	}
 }

@@ -20,7 +20,7 @@ export class RoomStateModule {
 	}
 
 	createRoom(name: string, capacity: number, password: string, userID: string) {
-		this._socket.emit('createRoom', { name, capacity, password, userID });
+		if (name && capacity && userID) this._socket.emit('createRoom', { name, capacity, password, userID });
 	}
 
 	parseAndUpdateRooms(roomsData: Array<any>) {
@@ -33,8 +33,9 @@ export class RoomStateModule {
 		else return false;
 	}
 
-	joinRoom(user: User, room: ChatRoom, password?: string) { 
-		if(room.joinable(password ? password : '')) this._socket.emit('join', { user: user.getId(), room: room.getRoomID() });
+	joinRoom(user: User, room: ChatRoom, password?: string) {
+		if (room.joinable(password ? password : ''))
+			this._socket.emit('join', { user: user.getId(), room: room.getRoomID() });
 	}
 
 	currentRoom(): Observable<ChatRoom> {
@@ -49,6 +50,11 @@ export class RoomStateModule {
 			sub.next(this._roomsList);
 			this._roomsListSubscribers.push(sub);
 		});
+	}
+
+	userHasRoomPowers(user: User, room: ChatRoom): boolean {
+		if (room.getOwner() == user.getId() || room.getAdmins().find((id) => id == user.getId())) return true;
+		else return false;
 	}
 
 	getCurrentRoom(): ChatRoom {
@@ -87,7 +93,6 @@ export class RoomStateModule {
 
 	leaveCurrentRoom(user: User): void {
 		if (this._currentRoom) {
-			console.log('LEAVE ROOM', this._currentRoom);
 			this._socket.emit('leave', { user: user.getId(), room: this._currentRoom.getRoomID() });
 			this._currentRoom = undefined;
 			this.updateCurrentRoomSubscribers();
@@ -119,6 +124,27 @@ export class RoomStateModule {
 		});
 
 		return parsedList;
+	}
+
+	updateRoom(room: ChatRoom) {
+		// TODO unit test
+		// emit room update
+		let result = this._socket.emit('updateRoom', {
+			room: room.getRoomID(),
+			name: room.getName(),
+			capacity: room.getCapacity(),
+			password: room.getPassword()
+		});
+		if (result) this.updateCurrentRoom();
+		else alert('Failed to create room');
+	}
+
+	_getSocketService(): SocketService {
+		if (isDevMode()) return this._socket;
+		else {
+			console.log('Sorry _getSocketService() is only available in dev mode');
+			return undefined;
+		}
 	}
 
 	_getRoomsList(): Array<ChatRoom> {

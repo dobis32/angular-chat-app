@@ -17,13 +17,12 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	private _subscriptions: Array<Subscription>;
 
 	public createRoomCallback = (name: string, capacity: number, password: string) => {
-		if (this.state.room.findRoomByName(name)) {
-			console.log('A room with that name already exists!');
-			alert('failed to creat room');
+		if (name.length > 0 && this.state.room.findRoomByName(name)) {
+			alert('Failed to create room: a room with that name already exists!');
 		} else {
 			this.state.room.createRoom(name, capacity, password, this._currentUser.getId());
 		}
-	}
+	};
 
 	constructor() {
 		this._roomsList = new Array();
@@ -61,11 +60,10 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 
 	async joinRoom(room: ChatRoom) {
 		let inputPassword = '';
-		if(room.getPassword().length) {
-			try{
+		if (room.getPassword().length) {
+			try {
 				inputPassword = await this.state.modal.promptRoomPassword();
-
-			} catch(error) {
+			} catch (error) {
 				console.log(error);
 			}
 		}
@@ -76,10 +74,10 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		this.state.room.leaveCurrentRoom(this._currentUser);
 	}
 
-	createRoom(): void {
-		this.state.modal.openModal('createRoom', this.createRoomCallback);		
+	async createRoom(): Promise<void> {
+		let { name, capacity, password } = await this.state.modal.createRoom();
+		this.state.room.createRoom(name, capacity, password, this._currentUser.getId());
 	}
-
 
 	getCurrentRoom(): ChatRoom {
 		return this._currentRoom;
@@ -87,6 +85,15 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 
 	getUsersInCurrentRoom(): Array<User> {
 		return this._currentRoom.getUsers();
+	}
+
+	currentUserHasRoomPowers(): boolean {
+		return this.state.room.userHasRoomPowers(this._currentUser, this._currentRoom);
+	}
+
+	async editCurrentRoom(): Promise<void> {
+		let room = await this.state.modal.editRoom(this._currentRoom);
+		this.state.room.updateRoom(room);
 	}
 
 	_setCurrentUser(user: User) {

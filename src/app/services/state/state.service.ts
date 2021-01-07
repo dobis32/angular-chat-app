@@ -1,9 +1,7 @@
 import { Injectable, isDevMode } from '@angular/core';
 import { SocketService } from './../socket.service';
-import { Observer, Observable, Subscription, Subscriber } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { ChatMessage } from '../../util/chatMessage';
-import { ChatRoom } from '../../util/chatRoom';
-import { User } from '../../util/user';
 import { ModalStateModule } from './modules/modal';
 import { RoomStateModule } from './modules/room';
 import { ChatLogStateModule } from './modules/chatlog';
@@ -42,12 +40,6 @@ export class StateService {
 		let initSub = this.socket.listen('init').subscribe((data) => this.handleInit(data));
 		this._socketSubscriptions.push(initSub);
 
-		let roomSub = this.socket.listen('join').subscribe((data) => this.handleJoin(data));
-		this._socketSubscriptions.push(roomSub);
-
-		let createRoomSub = this.socket.listen('createRoom').subscribe((data) => this.handleRoomCreation(data));
-		this._socketSubscriptions.push(createRoomSub);
-
 		let messageSub = this.socket.listen('message').subscribe((data) => this.handleMessage(data));
 		this._socketSubscriptions.push(messageSub);
 
@@ -59,6 +51,11 @@ export class StateService {
 
 		let roomsUpdateSub = this.socket.listen('roomsUpdate').subscribe((data) => this.handleRoomsUpdate(data));
 		this._socketSubscriptions.push(roomsUpdateSub);
+
+		let currentRoomUpdateSub = this.socket
+			.listen('currentRoomUpdate')
+			.subscribe((data) => this.handleCurrentRoomUpdate(data));
+		this._socketSubscriptions.push(currentRoomUpdateSub);
 	}
 
 	// Observer callbacks
@@ -67,26 +64,7 @@ export class StateService {
 		this.room.parseAndUpdateRooms(rooms);
 	}
 
-	handleJoin(data: any) {
-		let { id } = data;
-		if (id) {
-			this.room.updateCurrentRoom(id);
-		} else {
-			this.room.leaveCurrentRoom(this.user.getCurrentUser());
-		}
-	}
-
-	handleRoomCreation(data: any) {
-		console.log('INCOMING ROOM CREATE EVENT', data);
-		let { rooms, roomToJoin } = data;
-		if (rooms) {
-			this.room.parseAndUpdateRooms(rooms);
-			this.room.updateCurrentRoom(roomToJoin);
-		} else alert('Failed to create room');
-	}
-
 	handleMessage(data: any) {
-		console.log('INCOMING MESSAGE', data);
 		let { user, id, date, text } = data;
 		if (this.chatLog.chatLogIsDefined() && this.room.currentRoomIsDefined())
 			this.chatLog.addMessageToChatLog(new ChatMessage(user, id, new Date(date), text));
@@ -116,14 +94,20 @@ export class StateService {
 		else this.user.login(name, id);
 	}
 
-	handleRoomsUpdate(roomsData: any) {
-		this.room.parseAndUpdateRooms(roomsData);
-		this.room.updateCurrentRoom();
+	handleRoomsUpdate(data: any) {
+		this.room.parseAndUpdateRooms(data);
+	}
+
+	handleCurrentRoomUpdate(data: any) {
+		let { rooms, roomToJoin } = data;
+		if (rooms) {
+			this.room.parseAndUpdateRooms(rooms);
+			this.room.updateCurrentRoom(roomToJoin);
+		} else alert('Failed to create room');
 	}
 
 	// Notifications
 	roomNotifyUserLeft(username: string) {
-		console.log('USER LEFT ROOM', username);
 		this.chatLog.addMessageToChatLog(
 			new ChatMessage(
 				'Room notification',
@@ -171,7 +155,4 @@ export class StateService {
 			return undefined;
 		}
 	}
-
-	// Messages
-	
 }

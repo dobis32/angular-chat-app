@@ -48,7 +48,6 @@ export class ChatLogStateModule {
 	}
 
 	resetChatLog(): void {
-		console.log('RESETTING CHAT LOG');
 		this._chatLog = new Array();
 	}
 
@@ -82,6 +81,14 @@ export class ChatLogStateModule {
 		if (isDevMode()) return this._chatLogSubscribers;
 		else {
 			console.log(new Error('ERROR StateService._getChatLogSubscribers() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getSocketService(): SocketService {
+		if (isDevMode()) return this._socket;
+		else {
+			console.log(new Error('ERROR StateService._getSocketService() is only availabe in dev mode.'));
 			return undefined;
 		}
 	}

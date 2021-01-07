@@ -15,7 +15,7 @@ const getNonce = function() {
 // Set static folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-const denny = 'Denny Dingus';
+const denny = 'denny';
 const dennyID = 'dennyID';
 class RoomsUtility {
 	rooms;
@@ -80,7 +80,7 @@ class User {
 	name;
 	password;
 	constructor(name, password) {
-		this.id = name == denny ? dennyID : getNonce();
+		this.id = name == 'denny' ? 'dennyID' : getNonce();
 		this.name = name;
 		this.password = password;
 	}
@@ -185,7 +185,7 @@ let roomsList = [
 		users: [],
 		admins: [],
 		bans: [],
-		owner: dennyID
+		owner: 'dennyID'
 	},
 	{
 		id: getNonce(),
@@ -195,7 +195,7 @@ let roomsList = [
 		users: [],
 		admins: [],
 		bans: [],
-		owner: dennyID
+		owner: 'dennyID'
 	}
 ];
 
@@ -217,10 +217,11 @@ io.on('connection', (socket) => {
 				else {
 					let result = roomInstance.joinUser(user);
 					if (result) {
+						let roomsListJSON = roomsUtility.roomsListJSON();
 						socket.join(room);
 						socket.to(room).emit('notify', { notification: 'join', user: userInstance.getName() });
-						io.emit('roomsUpdate', roomsUtility.roomsListJSON());
-						socket.emit('join', { id: roomInstance.getID() });
+						io.emit('roomsUpdate', roomsListJSON);
+						socket.emit('currentRoomUpdate', { rooms: roomsListJSON, roomToJoin: roomInstance.getID() });
 					} else throw new Error('Room is full');
 				}
 			}
@@ -230,34 +231,42 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('leave', ({ user, room }) => {
-		if ((user, room)) {
+		try {
 			let roomInstance = roomsUtility.getRoomByID(room);
 			let userInstance = usersUtility.getUserByID(user);
+			if (!roomInstance || !userInstance) throw new Error('Room or User does not exist');
+
 			roomInstance.removeUser(user);
 			socket.leave(room);
 			socket.emit('join', { id: undefined });
 			socket.to(room).emit('notify', { notification: 'leave', user: userInstance.getName() });
 			io.emit('roomsUpdate', roomsUtility.roomsListJSON());
+		} catch (error) {
+			socket.emit('notify', { notification: 'error', message: `Failed to leave room: ${error.message}` });
 		}
 	});
 
-	socket.on('createRoom', ({ name, capacity, password, userID }) => {
-		if (name.length > 0 && capacity > 0) {
+	socket.on('updateRoom', ({ name, capacity, password, userID }) => {
+		try {
+			console.log('update room', name, capacity, password, userID);
 			if (!password) password = '';
 			let roomInstance = roomsUtility.createRoom(name, capacity, userID, password);
+			if (!roomInstance) throw new Error('Failed to create instance of room.');
 			let result = roomInstance.joinUser(userID);
+			let roomsListJSON = roomsUtility.roomsListJSON();
+
 			if (result) {
 				socket.join(roomInstance.getID());
-				let roomsListJSON = roomsUtility.roomsListJSON();
-				socket.emit('createRoom', { rooms: roomsListJSON, roomToJoin: roomInstance.getID() });
-				io.emit('roomsUpdate', roomsListJSON);
+				socket.emit('updateCurrentRoom', { rooms: roomsListJSON, roomToJoin: roomInstance.getID() });
 			} else
 				socket.emit('notify', {
 					notification: 'error',
 					message: 'Room was created, but could not be joined at this time. Try to join again...'
 				});
-		} else {
-			socket.emit('createRoom', {});
+			io.emit('roomsUpdate', roomsListJSON);
+		} catch (error) {
+			console.log(error);
+			socket.emit('notify', { notification: 'error', message: `Failed to create room: ${error.message}` });
 		}
 	});
 

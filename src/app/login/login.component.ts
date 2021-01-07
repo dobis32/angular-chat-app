@@ -32,7 +32,6 @@ export class LoginComponent implements OnInit {
 	login(fg: FormGroup) {
 		let { username, password } = fg.value;
 		this.loginFailed = false;
-		console.log(username, password);
 		if (fg.valid) {
 			let result = this.state.user.attemptLogin(username, password);
 			if (result) this.loginFailed = false;

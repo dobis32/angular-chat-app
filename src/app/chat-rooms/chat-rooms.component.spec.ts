@@ -61,7 +61,7 @@ describe('ChatRoomsComponent', () => {
 			return Promise.resolve('input');
 		});
 		let roomToJoin = new ChatRoom('id', 'name', 6, 'ownerID', [], 'password');
-		
+
 		await chatRoomsComponent.joinRoom(roomToJoin);
 
 		expect(typeof chatRoomsComponent.joinRoom).toEqual('function');
@@ -99,13 +99,56 @@ describe('ChatRoomsComponent', () => {
 		expect(chatRoomsComponent.getRoomsList()).toEqual(chatRoomsComponent._getRoomsList());
 	});
 
-	it('should have a function for creating a new room that should call the corresponding function of the state', () => {
-		let openModalSpy = spyOn(chatRoomsComponent.state.modal, 'openModal').and.callThrough();
+	it('should have a function for creating a new room that should call the corresponding function of the state', async () => {
+		let openModalSpy = spyOn(chatRoomsComponent.state.modal, 'createRoom').and.callFake(() => {
+			return new Promise((resolve) => {
+				resolve(true);
+			});
+		});
+		let createRoomSpy = spyOn(chatRoomsComponent.state.room, 'createRoom').and.callThrough();
 
-		chatRoomsComponent.createRoom();
+		chatRoomsComponent._setCurrentUser(new User('denny', 'dennyID'));
+		await chatRoomsComponent.createRoom();
 
 		expect(typeof chatRoomsComponent.createRoom).toEqual('function');
 		expect(openModalSpy).toHaveBeenCalled();
+		expect(createRoomSpy).toHaveBeenCalled();
+	});
+
+	it('should have a functon for determining if the current user owns the current room', () => {
+		const dennyID = 'dennyID';
+		const room = new ChatRoom('id', 'room', 6, dennyID);
+		const user = new User('denny', dennyID);
+
+		let stateFnSpy = spyOn(chatRoomsComponent.state.room, 'userHasRoomPowers').and.callThrough();
+
+		chatRoomsComponent._setCurrentRoom(room);
+		chatRoomsComponent._setCurrentUser(user);
+
+		chatRoomsComponent.currentUserHasRoomPowers();
+
+		expect(typeof chatRoomsComponent.currentUserHasRoomPowers).toEqual('function');
+		expect(stateFnSpy).toHaveBeenCalledWith(user, room);
+	});
+
+	it('should have a function for editing the current room', async () => {
+		const room = new ChatRoom('id', 'room', 6, 'dennyID');
+		const newRoom = new ChatRoom('id', 'new name', 6, 'dennyID');
+
+		const modalSpy = spyOn(chatRoomsComponent.state.modal, 'editRoom').and.callFake(() => {
+			return new Promise((resolve) => {
+				resolve(newRoom);
+			});
+		});
+		const updateSpy = spyOn(chatRoomsComponent.state.room, 'updateRoom').and.callFake(() => {});
+
+		chatRoomsComponent._setCurrentRoom(room);
+
+		await chatRoomsComponent.editCurrentRoom();
+
+		expect(typeof chatRoomsComponent.editCurrentRoom).toEqual('function');
+		expect(modalSpy).toHaveBeenCalledWith(room);
+		expect(updateSpy).toHaveBeenCalledWith(newRoom);
 	});
 
 	// Init
@@ -181,19 +224,18 @@ describe('ChatRoomsComponent', () => {
 	// Other
 	it('should have a function that acts as the modal callback when creating a room, and should only create a room when a unique room name is passed', () => {
 		let findSpy = spyOn(chatRoomsComponent.state.room, 'findRoomByName').and.callThrough();
-		let createSpy = spyOn(chatRoomsComponent.state.room, 'createRoom').and.callFake(()=>{});
-		let mockRoomsList = [new ChatRoom('id1', 'some_name', 6 ,'dennyID')];
+		let createSpy = spyOn(chatRoomsComponent.state.room, 'createRoom').and.callFake(() => {});
+		let mockRoomsList = [ new ChatRoom('id1', 'some_name', 6, 'dennyID') ];
 		let mockUser = new User('mockUser', 'id');
-		
+
 		chatRoomsComponent._setCurrentUser(mockUser);
 		chatRoomsComponent.createRoomCallback('some_name', 6, 'some_password');
 		chatRoomsComponent.state.room._setRoomsList(mockRoomsList);
 		chatRoomsComponent.createRoomCallback('some_name', 6, 'some_password');
-		
+
 		expect(typeof chatRoomsComponent.createRoomCallback).toEqual('function');
 		expect(createSpy).toHaveBeenCalledTimes(1);
 		expect(findSpy).toHaveBeenCalled();
-
 	});
 
 	// State

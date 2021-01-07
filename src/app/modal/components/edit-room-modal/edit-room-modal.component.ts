@@ -1,20 +1,19 @@
-import { Component, Output, OnInit, EventEmitter, Input, isDevMode } from '@angular/core';
-import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
+import { Component, OnInit, Input, Output, EventEmitter, isDevMode } from '@angular/core';
+import { FormGroup, FormBuilder, Validators, FormControl } from '@angular/forms';
 
 @Component({
-	selector: 'app-create-room-modal',
-	templateUrl: './create-room-modal.component.html',
-	styleUrls: [ './create-room-modal.component.scss' ]
+	selector: 'app-edit-room-modal',
+	templateUrl: './edit-room-modal.component.html',
+	styleUrls: [ './edit-room-modal.component.scss' ]
 })
-export class CreateRoomModalComponent implements OnInit {
+export class EditRoomModalComponent implements OnInit {
 	@Input() roomName: string;
 	@Input() cb: Function;
 
 	@Output() submit: EventEmitter<FormGroup> = new EventEmitter();
 
 	public form: FormGroup;
-
-	private _submitting: boolean;
+	public _submitting: boolean;
 
 	constructor(private fb: FormBuilder) {
 		this.form = this.fb.group({
@@ -33,7 +32,7 @@ export class CreateRoomModalComponent implements OnInit {
 		this.cb(name, capacity, password);
 	}
 
-	getFormInputs(): any {
+	getFormInputs() {
 		return this._submitting ? this.form.value : { name: '', capacity: 0, password: '' };
 	}
 

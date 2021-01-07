@@ -1,5 +1,6 @@
 import { isDevMode } from '@angular/core';
-import { Observer, Observable, Subscription, Subscriber } from 'rxjs';
+import { Observer, Observable } from 'rxjs';
+import { ChatRoom } from '../../../util/chatRoom';
 
 export class ModalStateModule {
 	private _modalCB: Function;
@@ -22,7 +23,42 @@ export class ModalStateModule {
 				this.openModal('promptRoomPassword', (userInput: string) => {
 					resolve(userInput);
 				});
-			} catch(error) {
+			} catch (error) {
+				reject(error);
+			}
+		});
+	}
+
+	editRoom(room: ChatRoom): Promise<ChatRoom> {
+		return new Promise((resolve, reject) => {
+			try {
+				this.openModal('editRoom', (name: string, capacity: number, password: string) => {
+					resolve(
+						new ChatRoom(
+							room.getRoomID(),
+							name,
+							capacity,
+							room.getOwner(),
+							room.getUsers(),
+							password,
+							room.getAdmins(),
+							room.getBans()
+						)
+					);
+				});
+			} catch (error) {
+				reject(error);
+			}
+		});
+	}
+
+	createRoom(): Promise<any> {
+		return new Promise((resolve, reject) => {
+			try {
+				this.openModal('createRoom', (name: string, capacity: number, password: string) => {
+					resolve({ name, capacity, password });
+				});
+			} catch (error) {
 				reject(error);
 			}
 		});

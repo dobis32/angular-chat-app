@@ -3,33 +3,28 @@ import { User } from '../../../util/user';
 import { Observer, Observable } from 'rxjs';
 import { SocketService } from '../../socket.service';
 export class UserStateModule {
-
-    private _currentUser: User;
-    private _socket: SocketService
-    private _currentUserSubscribers: Array<Observer<User>>;
+	private _currentUser: User;
+	private _socket: SocketService;
+	private _currentUserSubscribers: Array<Observer<User>>;
 	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
 
-
-    constructor(socket: SocketService) {
+	constructor(socket: SocketService) {
 		this._currentUser = undefined;
-        this._currentUserSubscribers = new Array();
-        this._loggedInStatusSubscribers = new Array();
-        this._socket = socket;
-    }
+		this._currentUserSubscribers = new Array();
+		this._loggedInStatusSubscribers = new Array();
+		this._socket = socket;
+	}
 
-    state() {
+	state() {
 		return new Observable((subscriber: Observer<User>) => {
 			this._currentUserSubscribers.push(subscriber);
 			subscriber.next(this._currentUser);
 		});
-    }
-    
-    getCurrentUser(): User { // TODO unit test
-        return this._currentUser;
-    }
+	}
 
-	currentRoomIndex(): Observable<number> {
-		return new Observable((subscriber: Observer<number>) => {});
+	getCurrentUser(): User {
+		// TODO unit test
+		return this._currentUser;
 	}
 
 	login(name, id) {
@@ -39,7 +34,6 @@ export class UserStateModule {
 	}
 
 	logout() {
-
 		this._currentUser = undefined;
 		this.updateCurrentUserSubscribers();
 		this.updateLoggedInSubscribers();
@@ -102,6 +96,14 @@ export class UserStateModule {
 		if (isDevMode()) return this._loggedInStatusSubscribers;
 		else {
 			console.log(new Error('ERROR StateService._getLoggedInStatusSubscribers() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getSocketService(): SocketService {
+		if (isDevMode()) return this._socket;
+		else {
+			console.log('Sorry _getSocketService() is only available in dev mode');
 			return undefined;
 		}
 	}
