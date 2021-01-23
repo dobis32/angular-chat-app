@@ -1,0 +1,15 @@
+<div class="modal-card" (click)="stopPropagation($event)">
+    <h4>{{ user.getName() }}</h4>
+    <div class="form-row">
+        <button (click)="promoteUser()">Promote to Admin</button>
+    </div>
+    <div class="form-row">
+        <button (click)="demoteUser()">Demote from Admin</button>
+    </div>
+    <div class="form-row">
+        <button (click)="kickUser()">Kick User</button>
+    </div>
+    <div class="form-row">
+        <button (click)="banUser()">Ban User</button>
+    </div>
+</div>

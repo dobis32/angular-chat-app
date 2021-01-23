@@ -12,6 +12,7 @@ import { ModalComponent } from './modal/modal/modal.component';
 import { PasswordModalComponent } from './modal/components/password-modal/password-modal.component';
 import { CreateRoomModalComponent } from './modal/components/create-room-modal/create-room-modal.component';
 import { EditRoomModalComponent } from './modal/components/edit-room-modal/edit-room-modal.component';
+import { UserActionModalComponent } from './modal/components/user-action-modal/user-action-modal.component';
 
 let componentDeclarations: Array<any> = [
 	AppComponent,
@@ -24,7 +25,14 @@ let componentDeclarations: Array<any> = [
 // if (isDevMode()) componentDeclarations.push(StateDisplayComponent);
 
 @NgModule({
-	declarations: [ ...componentDeclarations, ModalComponent, PasswordModalComponent, CreateRoomModalComponent, EditRoomModalComponent ],
+	declarations: [
+		...componentDeclarations,
+		ModalComponent,
+		PasswordModalComponent,
+		CreateRoomModalComponent,
+		EditRoomModalComponent,
+		UserActionModalComponent
+	],
 	imports: [ BrowserModule, AppRoutingModule, FormsModule, ReactiveFormsModule ],
 	providers: [],
 	bootstrap: [ AppComponent ]

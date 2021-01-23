@@ -3,6 +3,8 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { AppComponent } from './app.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { StateService } from './services/state/state.service';
+import { ChatRoom } from './util/chatRoom';
+import { User } from './util/user';
 
 describe('AppComponent', () => {
 	let fixture: ComponentFixture<AppComponent>;
@@ -68,15 +70,19 @@ describe('AppComponent', () => {
 	});
 
 	it('should leave the current room upon window unloading', () => {
-		let leaveSpy = spyOn(app._getStateService().room, 'leaveCurrentRoom').and.callFake(() => {});
+		let leaveSpy = spyOn(app._getStateService().room, 'userLeaveCurrentRoom').and.callFake(() => {});
 
 		app.appUnload();
 
 		expect(leaveSpy).toHaveBeenCalled();
-	})
+	});
 
 	it('should logout the current user upon window unloading', () => {
 		let logoutSpy = spyOn(app._getStateService().user, 'logout').and.callFake(() => {});
+		const currentRoom = new ChatRoom('id', 'name', 6, 'owner');
+		const currentUser = new User('user', 'uid');
+		app.getStateService().room._setCurrentRoom(currentRoom);
+		app.getStateService().user._setCurrentUser(currentUser);
 
 		app.appUnload();
 
@@ -85,6 +91,10 @@ describe('AppComponent', () => {
 
 	it('should unsubscribe from all socket-related subscriptions of the state service when the window unloads', () => {
 		let unsubLocalSubsSpy = spyOn(app._getStateService(), 'unsubscribeAllSocketSubs').and.callFake(() => {});
+		const currentRoom = new ChatRoom('id', 'name', 6, 'owner');
+		const currentUser = new User('user', 'uid');
+		app.getStateService().room._setCurrentRoom(currentRoom);
+		app.getStateService().user._setCurrentUser(currentUser);
 
 		app.appUnload();
 

@@ -5,28 +5,15 @@ import { User } from 'src/app/util/user';
 describe('UserStateModule', () => {
 	let userStateModule: UserStateModule;
 	let mockSocket: SocketService;
-	let testUser: User = new User('test user', 'testID');
+
 	beforeEach(() => {
 		mockSocket = new SocketService();
 		mockSocket._setURI('foobar');
 		userStateModule = new UserStateModule(mockSocket);
-		userStateModule._setUser(testUser);
 	});
 
 	it('should be created', () => {
 		expect(userStateModule).toBeTruthy();
-	});
-
-	it('should have an array for current user subscribers/observers', () => {
-		expect(Array.isArray(userStateModule._getCurrentUserSubscribers()));
-	});
-
-	it('should have an array for logged-in status subscribers/observers', () => {
-		expect(Array.isArray(userStateModule._getLoggedInStatusSubscribers()));
-	});
-
-	it('should have the data for the current user', () => {
-		expect(userStateModule._getCurrentUser()).toBeDefined();
 	});
 
 	it('should have a public method/function for exposing an Observable of the CurrentUser', () => {
@@ -54,8 +41,8 @@ describe('UserStateModule', () => {
 	});
 
 	it('should have a function to log-in a user, which should update current-user subscribers and logged-in status subscribers', () => {
-		let updateCurrentUserSubSpy = spyOn(userStateModule, 'updateCurrentUserSubscribers');
-		let updateLoggedInSubSpy = spyOn(userStateModule, 'updateLoggedInSubscribers');
+		let updateCurrentUserSubSpy = spyOn(userStateModule._getCurrentUserFreshy(), 'refresh');
+		let updateLoggedInSubSpy = spyOn(userStateModule._getLoggedInStatusFreshy(), 'refresh');
 		userStateModule.login('denny', 'id');
 
 		expect(typeof userStateModule.login).toEqual('function');
@@ -64,16 +51,21 @@ describe('UserStateModule', () => {
 	});
 
 	it('should have a function to log-out the current user which should update current-user subscribers and logged-in-status subscribers', () => {
-		let updateCurrentUserSubSpy = spyOn(userStateModule, 'updateCurrentUserSubscribers');
-		let updateLoggedInSubSpy = spyOn(userStateModule, 'updateLoggedInSubscribers');
-		let result = userStateModule.attemptLogin('denny', 'password');
+		let updateCurrentUserSubSpy = spyOn(userStateModule._getCurrentUserFreshy(), 'refresh');
+		let updateLoggedInSubSpy = spyOn(userStateModule._getLoggedInStatusFreshy(), 'refresh');
+		userStateModule._setCurrentUser(new User('name', 'id'));
 
 		userStateModule.logout();
 
 		expect(typeof userStateModule.logout).toEqual('function');
-		expect(result).toBeTrue();
-		expect(updateCurrentUserSubSpy).toHaveBeenCalled();
-		expect(updateLoggedInSubSpy).toHaveBeenCalled();
+		expect(updateCurrentUserSubSpy).toHaveBeenCalledWith(undefined);
+		expect(updateLoggedInSubSpy).toHaveBeenCalledWith(false);
 		expect(userStateModule._getCurrentUser()).toBeFalsy();
+	});
+
+	it('should have a function to return the current user', () => {
+		// NOTE user is set in beforeEach()
+		expect(typeof userStateModule.getCurrentUser).toEqual('function');
+		expect(userStateModule.getCurrentUser()).toEqual(userStateModule._getCurrentUser());
 	});
 });

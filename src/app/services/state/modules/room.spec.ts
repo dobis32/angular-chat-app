@@ -3,7 +3,6 @@ import { SocketService } from '../../socket.service';
 import { ChatRoom } from '../../../util/chatRoom';
 import { User } from '../../../util/user';
 
-import { Subscription } from 'rxjs';
 describe('RoomStateModule', () => {
 	let roomStateModule: RoomStateModule;
 	let mockSocket: SocketService;
@@ -38,38 +37,6 @@ describe('RoomStateModule', () => {
 		expect(typeof obs.subscribe).toEqual('function');
 	});
 
-	it('should have an array for chat room array subscribers', () => {
-		expect(Array.isArray(roomStateModule._getRoomsListSubscribers())).toBeTrue();
-	});
-
-	it('should have a funciton for updating the chat rooms array and updates rooms list subscribers', () => {
-		let spy = spyOn(roomStateModule, 'updateRoomsListSubscribers').and.callThrough();
-
-		let newRoomsList = [ new ChatRoom('id1', 'Room A', 2, 'ownerID') ];
-
-		roomStateModule.updateRoomsList(newRoomsList);
-
-		expect(typeof roomStateModule.updateRoomsList).toEqual('function');
-		expect(spy).toHaveBeenCalledWith();
-	});
-
-	it('should have a function for updating rooms list subscribers', () => {
-		let sub1: Subscription = roomStateModule.roomsList().subscribe(); // init observer
-		let sub2: Subscription = roomStateModule.roomsList().subscribe(); // init observer
-
-		let spy1 = spyOn(roomStateModule._getRoomsListSubscribers()[0], 'next').and.callThrough();
-		let spy2 = spyOn(roomStateModule._getRoomsListSubscribers()[1], 'next').and.callThrough();
-
-		roomStateModule.updateRoomsListSubscribers();
-
-		expect(typeof roomStateModule.updateRoomsListSubscribers).toEqual('function');
-		expect(spy1).toHaveBeenCalled();
-		expect(spy2).toHaveBeenCalled();
-
-		sub1.unsubscribe();
-		sub2.unsubscribe();
-	});
-
 	it('should have a public method/function for exposing an Observalbe of the current ChatRoom', () => {
 		let obs = roomStateModule.currentRoom();
 
@@ -77,66 +44,55 @@ describe('RoomStateModule', () => {
 		expect(typeof obs.subscribe).toEqual('function');
 	});
 
-	it('should have an array for current ChatRoom subscribers', () => {
-		expect(Array.isArray(roomStateModule._getCurrentRoomSubscribers())).toBeTrue();
-	});
-
-	it('should have a function for updating the current room', () => {
+	it('should have a function for updating the current room instance', () => {
 		let findSpy = spyOn(roomStateModule, 'findRoomByID').and.callThrough();
-		let updateCurrentRoomSubsSpy = spyOn(roomStateModule, 'updateCurrentRoomSubscribers').and.callThrough();
+		let updateCurrentRoomSubsSpy = spyOn(roomStateModule._getCurrentRoomFreshy(), 'refresh').and.callThrough();
+		let updateCurrentUsersSubsSpy = spyOn(
+			roomStateModule._getUsersInCurrentRoomFreshy(),
+			'refresh'
+		).and.callThrough();
 		let initCurrentRoom = roomStateModule._getCurrentRoom();
 		let uid = 'someID';
 		let rm = new ChatRoom('id', 'name', 6, uid);
 
 		roomStateModule._setRoomsList([ rm ]);
-		roomStateModule.updateCurrentRoom(rm.getRoomID());
+		roomStateModule.updateCurrentRoomInstance(rm.getRoomID());
 
-		expect(typeof roomStateModule.updateCurrentRoom).toEqual('function');
+		expect(typeof roomStateModule.updateCurrentRoomInstance).toEqual('function');
 		expect(roomStateModule._getCurrentRoom() == initCurrentRoom).toBeFalse();
 		expect(findSpy).toHaveBeenCalled();
 		expect(updateCurrentRoomSubsSpy).toHaveBeenCalled();
+		expect(updateCurrentUsersSubsSpy).toHaveBeenCalled();
 	});
 
-	it('should not update the current room if there is no corresponding room instance in the rooms list', () => {
+	it('should still update the current room if there is no corresponding room instance in the rooms list', () => {
 		let findSpy = spyOn(roomStateModule, 'findRoomByID').and.callThrough();
-		let updateCurrentRoomSubsSpy = spyOn(roomStateModule, 'updateCurrentRoomSubscribers').and.callThrough();
+		let updateCurrentRoomSubsSpy = spyOn(roomStateModule._getCurrentRoomFreshy(), 'refresh').and.callThrough();
+		let updateCurrentUsersSubsSpy = spyOn(
+			roomStateModule._getUsersInCurrentRoomFreshy(),
+			'refresh'
+		).and.callThrough();
 		let initCurrentRoom = roomStateModule._getCurrentRoom();
 		let uid = 'someID';
 		let rm = new ChatRoom('id', 'name', 6, uid);
 
 		roomStateModule._setRoomsList([ rm ]);
-		roomStateModule.updateCurrentRoom('foo');
+		roomStateModule.updateCurrentRoomInstance('foo');
 
-		expect(typeof roomStateModule.updateCurrentRoom).toEqual('function');
+		expect(typeof roomStateModule.updateCurrentRoomInstance).toEqual('function');
 		expect(roomStateModule._getCurrentRoom() == initCurrentRoom).toBeTrue();
 		expect(findSpy).toHaveBeenCalled();
-		expect(updateCurrentRoomSubsSpy).toHaveBeenCalledTimes(0);
+		expect(updateCurrentRoomSubsSpy).toHaveBeenCalled();
+		expect(updateCurrentUsersSubsSpy).toHaveBeenCalled();
 	});
 
-	it('should have a function for updating current room subscribers', () => {
-		let sub1: Subscription = roomStateModule.currentRoom().subscribe(); // init observer
-		let sub2: Subscription = roomStateModule.currentRoom().subscribe(); // init observer
-
-		let spy1 = spyOn(roomStateModule._getCurrentRoomSubscribers()[0], 'next').and.callThrough();
-		let spy2 = spyOn(roomStateModule._getCurrentRoomSubscribers()[1], 'next').and.callThrough();
-
-		roomStateModule.updateCurrentRoomSubscribers();
-
-		expect(typeof roomStateModule.updateCurrentRoomSubscribers).toEqual('function');
-		expect(spy1).toHaveBeenCalled();
-		expect(spy2).toHaveBeenCalled();
-
-		sub1.unsubscribe();
-		sub2.unsubscribe();
-	});
-
-	it('should have a function to leave the current ChatRoom and update corresponding observers', () => {
+	it('should have a function to have the current user leave the current ChatRoom and update corresponding observers', () => {
 		roomStateModule._setCurrentRoom(new ChatRoom('id', 'test room', 6, 'onwerID', [], '', [], []));
 
-		let spy = spyOn(roomStateModule, 'updateCurrentRoomSubscribers').and.callThrough();
-		roomStateModule.leaveCurrentRoom(new User('denny', 'dennyID'));
+		let spy = spyOn(roomStateModule._getCurrentRoomFreshy(), 'refresh').and.callThrough();
+		roomStateModule.userLeaveCurrentRoom(new User('denny', 'dennyID'));
 
-		expect(typeof roomStateModule.leaveCurrentRoom).toEqual('function');
+		expect(typeof roomStateModule.userLeaveCurrentRoom).toEqual('function');
 		expect(spy).toHaveBeenCalled();
 		expect(roomStateModule._getCurrentRoom()).toEqual(undefined);
 	});
@@ -277,5 +233,112 @@ describe('RoomStateModule', () => {
 		expect(result1).toBeTrue();
 		expect(result2).toBeTrue();
 		expect(result3).toBeFalse();
+	});
+
+	it('should have a function to emit a "currentRoomUpdate" socket event', () => {
+		const rm = new ChatRoom('id', 'name', 6, 'owner');
+		const user = new User('denny', 'owner');
+		const dataToEmit = {
+			roomID: rm.getRoomID(),
+			name: rm.getName(),
+			capacity: rm.getCapacity(),
+			password: rm.getPassword(),
+			userID: user.getId()
+		};
+		const emitSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
+			return true;
+		});
+		roomStateModule.emitCurrentRoomUpdate(rm, user);
+
+		expect(typeof roomStateModule.emitCurrentRoomUpdate).toEqual('function');
+		expect(emitSpy).toHaveBeenCalledWith('currentRoomUpdate', dataToEmit);
+	});
+
+	it('should not emit a "currentRoomUpdate" socket event if the user does not have room powers', () => {
+		const rm = new ChatRoom('room', 'name', 2, 'someone');
+		const user = new User('denny', 'dennyID');
+		const socketSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
+			return true;
+		});
+
+		roomStateModule.emitCurrentRoomUpdate(rm, user);
+
+		expect(roomStateModule.userHasRoomPowers(user, rm)).toBeFalse();
+		expect(socketSpy).toHaveBeenCalledTimes(0);
+	});
+
+	it('should have a function to return an array of Users in the current room', () => {
+		const curRoom = new ChatRoom('roomID', 'roomA', 4, 'foobar');
+		roomStateModule._setCurrentRoom(curRoom);
+		const obs = roomStateModule.usersInCurrentRoom();
+		expect(typeof roomStateModule.usersInCurrentRoom).toEqual('function');
+		expect(typeof obs.subscribe).toEqual('function');
+	});
+
+	it('should have a function to kick a user from the current room', () => {
+		const userToKick = new User('name', 'id');
+		const emitSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
+			return true;
+		});
+		roomStateModule._setCurrentRoom(new ChatRoom('id', 'name', 6, 'owner'));
+
+		roomStateModule.kickUserFromCurrentRoom(userToKick);
+
+		expect(typeof roomStateModule.kickUserFromCurrentRoom).toEqual('function');
+		expect(emitSpy).toHaveBeenCalled();
+	});
+
+	it('should not emit a kick event when attempting to kick a user and there is no current room', () => {
+		const userToKick = new User('name', 'id');
+		const emitSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
+			return true;
+		});
+
+		roomStateModule.kickUserFromCurrentRoom(userToKick);
+
+		expect(emitSpy).toHaveBeenCalledTimes(0);
+	});
+
+	it('should have a function for updating the current room instance based on room ID', () => {
+		const roomID = 'roomID';
+		const roomToUpdate = new ChatRoom(roomID, 'name', 6, 'owner');
+		const roomList = [ roomToUpdate, new ChatRoom('otherRoom', 'name', 6, 'owner') ];
+		const findRoomSpy = spyOn(roomStateModule, 'findRoomByID').and.callThrough();
+		const currentRoomRefreshSpy = spyOn(roomStateModule._getCurrentRoomFreshy(), 'refresh').and.callThrough();
+		const currentUsersRefreshSpy = spyOn(
+			roomStateModule._getUsersInCurrentRoomFreshy(),
+			'refresh'
+		).and.callThrough();
+
+		roomStateModule._setRoomsList(roomList);
+
+		roomStateModule.updateCurrentRoomInstance(roomID);
+
+		expect(typeof roomStateModule.updateCurrentRoomInstance).toEqual('function');
+		expect(findRoomSpy).toHaveBeenCalled();
+		expect(findRoomSpy).toHaveBeenCalledWith(roomID);
+		expect(currentRoomRefreshSpy).toHaveBeenCalledWith(roomToUpdate);
+		expect(currentUsersRefreshSpy).toHaveBeenCalledWith(roomToUpdate.getUsers());
+	});
+
+	it('should update the current room as being undefined if there is not a room with matching ID', () => {
+		const roomID = 'roomID';
+		const roomToUpdate = new ChatRoom(roomID, 'name', 6, 'owner');
+		const roomList = [ roomToUpdate, new ChatRoom('otherRoom', 'name', 6, 'owner') ];
+		const findRoomSpy = spyOn(roomStateModule, 'findRoomByID').and.callThrough();
+		const currentRoomRefreshSpy = spyOn(roomStateModule._getCurrentRoomFreshy(), 'refresh').and.callThrough();
+		const currentUsersRefreshSpy = spyOn(
+			roomStateModule._getUsersInCurrentRoomFreshy(),
+			'refresh'
+		).and.callThrough();
+
+		roomStateModule._setRoomsList(roomList);
+
+		roomStateModule.updateCurrentRoomInstance();
+
+		expect(typeof roomStateModule.updateCurrentRoomInstance).toEqual('function');
+		expect(findRoomSpy).toHaveBeenCalledWith('');
+		expect(currentRoomRefreshSpy).toHaveBeenCalledWith(undefined);
+		expect(currentUsersRefreshSpy).toHaveBeenCalledWith([]);
 	});
 });

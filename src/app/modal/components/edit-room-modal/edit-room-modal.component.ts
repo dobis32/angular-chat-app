@@ -1,5 +1,6 @@
 import { Component, OnInit, Input, Output, EventEmitter, isDevMode } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, FormControl } from '@angular/forms';
+import { ChatRoom } from '../../../util/chatRoom';
 
 @Component({
 	selector: 'app-edit-room-modal',
@@ -7,7 +8,7 @@ import { FormGroup, FormBuilder, Validators, FormControl } from '@angular/forms'
 	styleUrls: [ './edit-room-modal.component.scss' ]
 })
 export class EditRoomModalComponent implements OnInit {
-	@Input() roomName: string;
+	@Input() roomToEdit: ChatRoom;
 	@Input() cb: Function;
 
 	@Output() submit: EventEmitter<FormGroup> = new EventEmitter();
@@ -16,16 +17,19 @@ export class EditRoomModalComponent implements OnInit {
 	public _submitting: boolean;
 
 	constructor(private fb: FormBuilder) {
-		this.form = this.fb.group({
-			name: new FormControl('', [ Validators.required ]),
-			capacity: new FormControl(2, [ Validators.min(2), Validators.max(12) ]),
-			password: new FormControl('')
-		});
-
 		this._submitting = false;
 	}
 
-	ngOnInit(): void {}
+	ngOnInit(): void {
+		this.form = this.fb.group({
+			name: new FormControl(this.roomToEdit ? this.roomToEdit.getName() : '', [ Validators.required ]),
+			capacity: new FormControl(this.roomToEdit ? this.roomToEdit.getCapacity() : 2, [
+				Validators.min(2),
+				Validators.max(12)
+			]),
+			password: new FormControl(this.roomToEdit ? this.roomToEdit.getPassword() : '')
+		});
+	}
 
 	ngOnDestroy(): void {
 		let { name, capacity, password } = this.getFormInputs();

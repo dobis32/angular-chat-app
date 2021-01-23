@@ -20,10 +20,6 @@ describe('ChatLogStateModule', () => {
 		expect(Array.isArray(chatLogStateModule._getChatLog()));
 	});
 
-	it('should have an array for chat log subscribers/observers', () => {
-		expect(Array.isArray(chatLogStateModule._getChatLogSubscribers()));
-	});
-
 	it('should have a function that can determine whether or not the chat log is defined', () => {
 		expect(typeof chatLogStateModule.chatLogIsDefined).toEqual('function');
 		expect(chatLogStateModule.chatLogIsDefined()).toBeTrue();
@@ -39,34 +35,15 @@ describe('ChatLogStateModule', () => {
 		let parsedMessages: Array<ChatMessage>;
 		let d = new Date();
 		let chatMessageData = [
-			{ user: 'foo', date: d.toDateString(), text: 'some message1' },
-			{ user: 'bar', date: d.toDateString(), text: 'some message2' },
-			{ user: 'fizz', date: d.toDateString(), text: 'some message3' }
+			{ user: 'foo', id: 'id1', date: d.toDateString(), text: 'some message1' },
+			{ user: 'bar', id: 'id2', date: d.toDateString(), text: 'some message2' },
+			{ user: 'fizz', id: 'id3', date: d.toDateString(), text: 'some message3' }
 		];
 
 		parsedMessages = chatLogStateModule.parseChatLog(chatMessageData);
 
 		expect(Array.isArray(parsedMessages));
 		expect(parsedMessages.length).toEqual(chatMessageData.length);
-	});
-
-	it('should have a function for updating all chat log subscribers', () => {
-		let currentChatLog = chatLogStateModule._getChatLog();
-
-		let subscription1 = chatLogStateModule.state().subscribe();
-		let subscription2 = chatLogStateModule.state().subscribe();
-
-		let obSpy1 = spyOn(chatLogStateModule._getChatLogSubscribers()[0], 'next').and.callThrough();
-		let obSpy2 = spyOn(chatLogStateModule._getChatLogSubscribers()[1], 'next').and.callThrough();
-
-		chatLogStateModule.updateChatLogSubscribers();
-
-		expect(typeof chatLogStateModule.updateChatLogSubscribers).toEqual('function');
-		expect(obSpy1).toHaveBeenCalledWith(currentChatLog);
-		expect(obSpy2).toHaveBeenCalledWith(currentChatLog);
-
-		subscription1.unsubscribe();
-		subscription2.unsubscribe();
 	});
 
 	it('should have a public method/function for emitting ChatMessage data to the SocketService', () => {

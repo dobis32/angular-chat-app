@@ -2,25 +2,22 @@ import { isDevMode } from '@angular/core';
 import { ChatRoom } from '../../../util/chatRoom';
 import { User } from '../../../util/user';
 import { SocketService } from './../../socket.service';
-import { Observer, Observable, Subscriber } from 'rxjs';
+import { Observable } from 'rxjs';
+import { Freshy } from 'src/app/util/freshy';
 
 export class RoomStateModule {
-	private _socket: SocketService;
-	private _roomsList: Array<ChatRoom>;
-	private _currentRoom: ChatRoom;
+	private _roomsList: Freshy<Array<ChatRoom>>;
+	private _currentRoom: Freshy<ChatRoom>;
+	private _usersInCurrentRoom: Freshy<Array<User>>;
 
-	private _currentRoomSubscribers: Array<Observer<ChatRoom>>;
-	private _roomsListSubscribers: Array<Observer<Array<ChatRoom>>>;
-
-	constructor(socket: SocketService) {
-		this._socket = socket;
-		this._roomsList = new Array();
-		this._currentRoomSubscribers = new Array();
-		this._roomsListSubscribers = new Array();
+	constructor(private socket: SocketService) {
+		this._roomsList = new Freshy<Array<ChatRoom>>([]);
+		this._currentRoom = new Freshy<ChatRoom>();
+		this._usersInCurrentRoom = new Freshy<Array<User>>();
 	}
 
 	createRoom(name: string, capacity: number, password: string, userID: string) {
-		if (name && capacity && userID) this._socket.emit('createRoom', { name, capacity, password, userID });
+		if (name && capacity && userID) this.socket.emit('createRoom', { name, capacity, password, userID });
 	}
 
 	parseAndUpdateRooms(roomsData: Array<any>) {
@@ -29,27 +26,25 @@ export class RoomStateModule {
 	}
 
 	currentRoomIsDefined(): boolean {
-		if (this._currentRoom != undefined) return true;
+		if (this._currentRoom.getData() != undefined) return true;
 		else return false;
 	}
 
 	joinRoom(user: User, room: ChatRoom, password?: string) {
 		if (room.joinable(password ? password : ''))
-			this._socket.emit('join', { user: user.getId(), room: room.getRoomID() });
+			this.socket.emit('join', { user: user.getId(), room: room.getRoomID() });
 	}
 
 	currentRoom(): Observable<ChatRoom> {
-		return new Observable((sub: Subscriber<ChatRoom>) => {
-			sub.next(this._currentRoom);
-			this._currentRoomSubscribers.push(sub);
-		});
+		return this._currentRoom.observableData;
+	}
+
+	usersInCurrentRoom(): Observable<Array<User>> {
+		return this._usersInCurrentRoom.observableData;
 	}
 
 	roomsList(): Observable<Array<any>> {
-		return new Observable((sub: Subscriber<Array<any>>) => {
-			sub.next(this._roomsList);
-			this._roomsListSubscribers.push(sub);
-		});
+		return this._roomsList.observableData;
 	}
 
 	userHasRoomPowers(user: User, room: ChatRoom): boolean {
@@ -58,51 +53,38 @@ export class RoomStateModule {
 	}
 
 	getCurrentRoom(): ChatRoom {
-		return this._currentRoom;
+		return this._currentRoom.getData();
 	}
 
 	findRoomByName(name: string): ChatRoom {
-		return this._roomsList.find((rm: ChatRoom) => rm.getName() == name);
+		return this._roomsList.getData().find((rm: ChatRoom) => rm.getName() == name);
 	}
 
 	findRoomByID(id: string): ChatRoom {
-		return this._roomsList.find((rm: ChatRoom) => rm.getRoomID() == id);
+		return this._roomsList.getData().find((rm: ChatRoom) => rm.getRoomID() == id);
 	}
 
-	updateRoomsList(rooms: Array<any>): void {
-		this._roomsList = rooms;
-		this.updateRoomsListSubscribers();
+	updateRoomsList(rooms: Array<ChatRoom>): void {
+		this._roomsList.refresh(rooms);
 	}
 
-	updateRoomsListSubscribers(): void {
-		this._roomsListSubscribers.forEach((sub: Observer<Array<ChatRoom>>) => {
-			sub.next(this._roomsList);
-		});
+	kickUserFromCurrentRoom(user: User) {
+		if (this._currentRoom.getData())
+			this.socket.emit('kick', { user: user.getId(), room: this._currentRoom.getData().getRoomID() });
 	}
 
-	updateCurrentRoom(providedID?: string) {
+	updateCurrentRoomInstance(providedID?: string) {
 		let roomID = providedID ? providedID : '';
 		let roomInstance = this.findRoomByID(roomID);
-		if (roomInstance) {
-			this._currentRoom = roomInstance;
-			this.updateCurrentRoomSubscribers();
-		} else {
-			console.log('whoops, that room does not seem to exist...');
-		}
+
+		this._currentRoom.refresh(roomInstance);
+		this._usersInCurrentRoom.refresh(roomInstance ? roomInstance.getUsers() : []);
 	}
 
-	leaveCurrentRoom(user: User): void {
-		if (this._currentRoom) {
-			this._socket.emit('leave', { user: user.getId(), room: this._currentRoom.getRoomID() });
-			this._currentRoom = undefined;
-			this.updateCurrentRoomSubscribers();
-		}
-	}
-
-	updateCurrentRoomSubscribers(): void {
-		this._currentRoomSubscribers.forEach((obs: Observer<ChatRoom>) => {
-			obs.next(this._currentRoom);
-		});
+	userLeaveCurrentRoom(user: User): void {
+		if (this._currentRoom.getData())
+			this.socket.emit('leave', { user: user.getId(), room: this._currentRoom.getData().getRoomID() });
+		this._currentRoom.refresh(undefined);
 	}
 
 	parseRoomsList(unparsedList: Array<any>): Array<ChatRoom> {
@@ -126,21 +108,37 @@ export class RoomStateModule {
 		return parsedList;
 	}
 
-	updateRoom(room: ChatRoom) {
-		// TODO unit test
-		// emit room update
-		let result = this._socket.emit('updateRoom', {
-			room: room.getRoomID(),
-			name: room.getName(),
-			capacity: room.getCapacity(),
-			password: room.getPassword()
-		});
-		if (result) this.updateCurrentRoom();
-		else alert('Failed to create room');
+	emitCurrentRoomUpdate(room: ChatRoom, user: User) {
+		if (this.userHasRoomPowers(user, room)) {
+			let result = this.socket.emit('currentRoomUpdate', {
+				roomID: room.getRoomID(),
+				name: room.getName(),
+				capacity: room.getCapacity(),
+				password: room.getPassword(),
+				userID: user.getId()
+			});
+			if (!result) alert('Failed to create room');
+		}
+	}
+
+	promoteUser(user: User) {
+		// TODO implement & unit test
+	}
+
+	demoteUser(user: User) {
+		// TODO implement & unit test
+	}
+
+	kickUser(user: User) {
+		// TODO implement & unit test
+	}
+
+	banUser(user: User) {
+		// TODO implement & unit test
 	}
 
 	_getSocketService(): SocketService {
-		if (isDevMode()) return this._socket;
+		if (isDevMode()) return this.socket;
 		else {
 			console.log('Sorry _getSocketService() is only available in dev mode');
 			return undefined;
@@ -148,7 +146,7 @@ export class RoomStateModule {
 	}
 
 	_getRoomsList(): Array<ChatRoom> {
-		if (isDevMode()) return this._roomsList;
+		if (isDevMode()) return this._roomsList.getData();
 		else {
 			console.log('Sorry _getRoomsList() is only available in dev mode');
 			return undefined;
@@ -156,23 +154,15 @@ export class RoomStateModule {
 	}
 
 	_setRoomsList(rooms: Array<ChatRoom>) {
-		if (isDevMode()) this._roomsList = rooms;
+		if (isDevMode()) this._roomsList.refresh(rooms);
 		else {
 			console.log('Sorry _setRoomsList() is only available in dev mode');
 			return undefined;
 		}
 	}
 
-	_getRoomsListSubscribers(): Array<Observer<Array<ChatRoom>>> {
-		if (isDevMode()) return this._roomsListSubscribers;
-		else {
-			console.log('Sorry _getRoomsListSubscribers() is only available in dev mode');
-			return undefined;
-		}
-	}
-
 	_setCurrentRoom(room: ChatRoom) {
-		if (isDevMode()) this._currentRoom = room;
+		if (isDevMode()) this._currentRoom.refresh(room);
 		else {
 			console.log('Sorry _setCurrentRoom() is only available in dev mode');
 			return undefined;
@@ -180,17 +170,33 @@ export class RoomStateModule {
 	}
 
 	_getCurrentRoom(): ChatRoom {
-		if (isDevMode()) return this._currentRoom;
+		if (isDevMode()) return this._currentRoom.getData();
 		else {
 			console.log('Sorry _getCurrentRoom() is only available in dev mode');
 			return undefined;
 		}
 	}
 
-	_getCurrentRoomSubscribers(): Array<Observer<ChatRoom>> {
-		if (isDevMode()) return this._currentRoomSubscribers;
+	_getCurrentRoomFreshy(): Freshy<ChatRoom> {
+		if (isDevMode()) return this._currentRoom;
 		else {
-			console.log('Sorry _getCurrentRoomSubscribers() is only available in dev mode');
+			console.log('Sorry _getCurrentRoomFreshy() is only available in dev mode');
+			return undefined;
+		}
+	}
+
+	_getRoomsListFreshy(): Freshy<Array<ChatRoom>> {
+		if (isDevMode()) return this._roomsList;
+		else {
+			console.log('Sorry _getRoomsListFreshy() is only available in dev mode');
+			return undefined;
+		}
+	}
+
+	_getUsersInCurrentRoomFreshy(): Freshy<Array<User>> {
+		if (isDevMode()) return this._usersInCurrentRoom;
+		else {
+			console.log('Sorry _getUsersInCurrentRoomFreshy() is only available in dev mode');
 			return undefined;
 		}
 	}

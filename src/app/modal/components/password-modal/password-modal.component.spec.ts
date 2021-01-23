@@ -57,8 +57,14 @@ describe('PasswordModalComponent', () => {
 		expect(handleSubmitSpy).toHaveBeenCalled();
 	});
 
-	it('should have a function for stopping event propagation', () => {
+	it('should have a function for stopping event propogation', () => {
+		let e = new Event('click');
+		let stopPropSpy = spyOn(e, 'stopPropagation').and.callThrough();
+
+		passwordModalComponent.stopPropagation(e);
+
 		expect(typeof passwordModalComponent.stopPropagation).toEqual('function');
+		expect(stopPropSpy).toHaveBeenCalled();
 	});
 
 	// Init

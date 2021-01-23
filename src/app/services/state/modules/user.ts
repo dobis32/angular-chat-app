@@ -2,62 +2,38 @@ import { isDevMode } from '@angular/core';
 import { User } from '../../../util/user';
 import { Observer, Observable } from 'rxjs';
 import { SocketService } from '../../socket.service';
+import { Freshy } from 'src/app/util/freshy';
 export class UserStateModule {
-	private _currentUser: User;
+	private _currentUser: Freshy<User>;
+	private _loggedIntStatus: Freshy<boolean>;
 	private _socket: SocketService;
-	private _currentUserSubscribers: Array<Observer<User>>;
-	private _loggedInStatusSubscribers: Array<Observer<boolean>>;
 
 	constructor(socket: SocketService) {
-		this._currentUser = undefined;
-		this._currentUserSubscribers = new Array();
-		this._loggedInStatusSubscribers = new Array();
+		this._currentUser = new Freshy<User>();
+		this._loggedIntStatus = new Freshy<boolean>(false);
 		this._socket = socket;
 	}
 
 	state() {
-		return new Observable((subscriber: Observer<User>) => {
-			this._currentUserSubscribers.push(subscriber);
-			subscriber.next(this._currentUser);
-		});
+		return this._currentUser.observableData;
 	}
 
 	getCurrentUser(): User {
-		// TODO unit test
-		return this._currentUser;
+		return this._currentUser.getData();
 	}
 
-	login(name, id) {
-		this._currentUser = new User(name, id);
-		this.updateCurrentUserSubscribers();
-		this.updateLoggedInSubscribers();
+	login(name: string, id: string) {
+		this._currentUser.refresh(new User(name, id));
+		this._loggedIntStatus.refresh(true);
 	}
 
 	logout() {
-		this._currentUser = undefined;
-		this.updateCurrentUserSubscribers();
-		this.updateLoggedInSubscribers();
+		this._currentUser.refresh(undefined);
+		this._loggedIntStatus.refresh(false);
 	}
 
 	loggedInStatus(): Observable<boolean> {
-		return new Observable((subscriber: Observer<boolean>) => {
-			let bool = this._currentUser ? true : false;
-
-			this._loggedInStatusSubscribers.push(subscriber);
-			subscriber.next(bool);
-		});
-	}
-
-	updateCurrentUserSubscribers(): void {
-		this._currentUserSubscribers.forEach((sub) => {
-			sub.next(this._currentUser);
-		});
-	}
-
-	updateLoggedInSubscribers(): void {
-		this._loggedInStatusSubscribers.forEach((sub) => {
-			sub.next(this._currentUser ? true : false);
-		});
+		return this._loggedIntStatus.observableData;
 	}
 
 	attemptLogin(username: string, password: string): boolean {
@@ -69,33 +45,33 @@ export class UserStateModule {
 		}
 	}
 
-	_setUser(user: User) {
-		if (isDevMode()) this._currentUser = user;
+	_getCurrentUserFreshy(): Freshy<User> {
+		if (isDevMode()) return this._currentUser;
 		else {
-			console.log(new Error('ERROR StateService._getCurrentUser() is only availabe in dev mode.'));
+			console.log(new Error('ERROR StateService._getCurrentUserFreshy() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getLoggedInStatusFreshy(): Freshy<boolean> {
+		if (isDevMode()) return this._loggedIntStatus;
+		else {
+			console.log(new Error('ERROR StateService._getLoggedInStatusFreshy() is only availabe in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_setCurrentUser(user: User) {
+		if (isDevMode()) this._currentUser.refresh(user);
+		else {
+			console.log(new Error('ERROR StateService._setCurrentUser() is only availabe in dev mode.'));
 		}
 	}
 
 	_getCurrentUser(): User {
-		if (isDevMode()) return this._currentUser;
+		if (isDevMode()) return this._currentUser.getData();
 		else {
 			console.log(new Error('ERROR StateService._getCurrentUser() is only availabe in dev mode.'));
-			return undefined;
-		}
-	}
-
-	_getCurrentUserSubscribers(): Array<Observer<User>> {
-		if (isDevMode()) return this._currentUserSubscribers;
-		else {
-			console.log(new Error('ERROR StateService._getCurrentUserSubscribers() is only availabe in dev mode.'));
-			return undefined;
-		}
-	}
-
-	_getLoggedInStatusSubscribers(): Array<Observer<boolean>> {
-		if (isDevMode()) return this._loggedInStatusSubscribers;
-		else {
-			console.log(new Error('ERROR StateService._getLoggedInStatusSubscribers() is only availabe in dev mode.'));
 			return undefined;
 		}
 	}

@@ -27,7 +27,9 @@ describe('ModalComponent', () => {
 	let mockModalObservable = new Observable<any>((sub: Observer<any>) => {
 		sub.next({ modal, cb });
 	});
-	let modalSubSpy: jasmine.Spy;
+	let modalCBSubSpy: jasmine.Spy;
+	let activeNameSubSpy: jasmine.Spy;
+	let currentRoomSpy: jasmine.Spy;
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
@@ -41,9 +43,9 @@ describe('ModalComponent', () => {
 		modalComponent = modalDebugElement.componentInstance;
 
 		modalComponent.ngOnDestroy();
-		modalSubSpy = spyOn(modalComponent.state.modal, 'state').and.callFake(() => {
-			return mockModalObservable;
-		});
+		modalCBSubSpy = spyOn(modalComponent.state.modal, 'modalCB').and.callThrough();
+		activeNameSubSpy = spyOn(modalComponent.state.modal, 'activeModalName').and.callThrough();
+		currentRoomSpy = spyOn(modalComponent.state.room, 'currentRoom').and.callThrough();
 		modalComponent.ngOnInit();
 	});
 
@@ -82,22 +84,17 @@ describe('ModalComponent', () => {
 
 	// Lifecycle
 	it('should subscribe to the current/active-room of the StateService', () => {
-		let mockChatRoom = new ChatRoom('id', 'name', 6, 'ownerID');
-		let mockObservable = new Observable<ChatRoom>((sub: Observer<ChatRoom>) => {
-			sub.next(mockChatRoom);
-		});
-		let subSpy = spyOn(modalComponent.state.room, 'currentRoom').and.callFake(() => {
-			return mockObservable;
-		});
-
 		modalComponent.ngOnInit();
 
-		expect(subSpy).toHaveBeenCalled();
+		expect(currentRoomSpy).toHaveBeenCalled();
 	});
 
-	it('should subscribe to the current/active-room of the StateService', () => {
-		// spy is set in beforeEach()
-		expect(modalSubSpy).toHaveBeenCalled();
+	it('should subscribe to the modal callback function of the StateService', () => {
+		expect(modalCBSubSpy).toHaveBeenCalled();
+	});
+
+	it('should subscribe to the active modal name of the StateService', () => {
+		expect(activeNameSubSpy).toHaveBeenCalled();
 	});
 
 	it('should unsubscribe from the current/active-room subscription when the component is destoryed', () => {
@@ -108,13 +105,19 @@ describe('ModalComponent', () => {
 		expect(currRoomUnsubSpy).toHaveBeenCalled();
 	});
 
-	it('should unsubscribe from the modal subscription when the component is destoryed', () => {
-		let modalUnsubSpy = spyOn(modalComponent._getModalSub(), 'unsubscribe').and.callThrough();
+	it('should unsubscribe from the active modal name subscription when the component is destoryed', () => {
+		let modalUnsubSpy = spyOn(modalComponent._getActiveNameSub(), 'unsubscribe').and.callThrough();
 
 		modalComponent.ngOnDestroy();
 
 		expect(modalUnsubSpy).toHaveBeenCalled();
 	});
 
-	// State
+	it('should unsubscribe from the modal callback subscription when the component is destoryed', () => {
+		let modalUnsubSpy = spyOn(modalComponent._getModalCBSub(), 'unsubscribe').and.callThrough();
+
+		modalComponent.ngOnDestroy();
+
+		expect(modalUnsubSpy).toHaveBeenCalled();
+	});
 });

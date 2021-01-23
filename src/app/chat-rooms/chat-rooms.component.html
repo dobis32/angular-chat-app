@@ -7,6 +7,6 @@
     <div *ngIf="getCurrentRoom() != undefined">
         <div id="leave-room-button" (click)="leaveRoom()">Leave</div>
         <h3>{{getCurrentRoom().getName()}} <span *ngIf="currentUserHasRoomPowers()" (click)="editCurrentRoom()">(edit)</span></h3>
-        <div *ngFor="let user of getUsersInCurrentRoom()">{{user.getName()}}</div>
+        <div *ngFor="let user of usersInCurrentRoom | async" class="chat-user" (click)="performUserAction(user)">{{user.getName()}}</div>
     </div>
 </div>

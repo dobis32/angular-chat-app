@@ -1,0 +1,14 @@
+.modal-card {
+	width: 260px;
+	height: 140px;
+	margin: 40px auto 0 auto;
+	padding: 20px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	.form-row {
+		padding: 5px 0px;
+		display: flex;
+		justify-content: center;
+	}
+}

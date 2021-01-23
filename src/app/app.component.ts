@@ -28,7 +28,7 @@ export class AppComponent implements OnInit, OnDestroy {
 	}
 
 	appUnload() {
-		this.state.room.leaveCurrentRoom(this.state.user.getCurrentUser());
+		this.state.room.userLeaveCurrentRoom(this.state.user.getCurrentUser());
 		this.state.user.logout();
 		this.state.unsubscribeAllSocketSubs();
 	}

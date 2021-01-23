@@ -52,13 +52,24 @@ export class StateService {
 		let roomsUpdateSub = this.socket.listen('roomsUpdate').subscribe((data) => this.handleRoomsUpdate(data));
 		this._socketSubscriptions.push(roomsUpdateSub);
 
-		let currentRoomUpdateSub = this.socket
-			.listen('currentRoomUpdate')
-			.subscribe((data) => this.handleCurrentRoomUpdate(data));
-		this._socketSubscriptions.push(currentRoomUpdateSub);
+		let kickEventSub = this.socket.listen('kick').subscribe((data) => {
+			this.handleKickEvent(data);
+		});
+		this._socketSubscriptions.push(kickEventSub);
+
+		let joinEventSub = this.socket.listen('join').subscribe((data) => {
+			this.handleJoinEvent(data);
+		});
+		this._socketSubscriptions.push(joinEventSub);
 	}
 
 	// Observer callbacks
+	handleJoinEvent(data: any) {
+		let { room } = data;
+		this.chatLog.resetChatLog();
+		this.room.updateCurrentRoomInstance(room);
+	}
+
 	handleInit(data: any) {
 		let { rooms } = data;
 		this.room.parseAndUpdateRooms(rooms);
@@ -70,6 +81,13 @@ export class StateService {
 			this.chatLog.addMessageToChatLog(new ChatMessage(user, id, new Date(date), text));
 	}
 
+	handleKickEvent(data: any) {
+		const { roomName, ban } = data;
+		this.room.updateCurrentRoomInstance();
+		if (ban) alert(`You have been banned from ${roomName}!`);
+		else alert(`You have been kicked from ${roomName}!`);
+	}
+
 	handleNotification(data: any) {
 		const { notification, user, message } = data;
 		switch (notification) {
@@ -78,6 +96,9 @@ export class StateService {
 				break;
 			case 'leave':
 				this.roomNotifyUserLeft(user);
+				break;
+			case 'kick':
+				this.roomNotifyUserKick(user);
 				break;
 			case 'join':
 				this.roomNotifyUserJoin(user);
@@ -89,42 +110,47 @@ export class StateService {
 	}
 
 	handleLogin(data: any) {
-		let { id, name, failed } = data;
-		if (failed) this.user.logout();
+		let { id, name } = data;
+		if (!id) this.user.logout();
 		else this.user.login(name, id);
 	}
 
 	handleRoomsUpdate(data: any) {
 		this.room.parseAndUpdateRooms(data);
-	}
-
-	handleCurrentRoomUpdate(data: any) {
-		let { rooms, roomToJoin } = data;
-		if (rooms) {
-			this.room.parseAndUpdateRooms(rooms);
-			this.room.updateCurrentRoom(roomToJoin);
-		} else alert('Failed to create room');
+		const rm = this.room.getCurrentRoom();
+		if (rm) this.room.updateCurrentRoomInstance(rm.getRoomID());
 	}
 
 	// Notifications
-	roomNotifyUserLeft(username: string) {
+	roomNotifyUserKick(userName: string) {
 		this.chatLog.addMessageToChatLog(
 			new ChatMessage(
 				'Room notification',
 				'RoomBot',
 				new Date(),
-				`${username ? username : 'Unknown User'} has left the room.`
+				`${userName ? userName : 'Unknown User'} was kicked from the room.`
 			)
 		);
 	}
 
-	roomNotifyUserJoin(username: string) {
+	roomNotifyUserLeft(userName: string) {
 		this.chatLog.addMessageToChatLog(
 			new ChatMessage(
 				'Room notification',
 				'RoomBot',
 				new Date(),
-				`${username ? username : 'Unknown User'} has joined the room.`
+				`${userName ? userName : 'Unknown User'} has left the room.`
+			)
+		);
+	}
+
+	roomNotifyUserJoin(userName: string) {
+		this.chatLog.addMessageToChatLog(
+			new ChatMessage(
+				'Room notification',
+				'RoomBot',
+				new Date(),
+				`${userName ? userName : 'Unknown User'} has joined the room.`
 			)
 		);
 	}

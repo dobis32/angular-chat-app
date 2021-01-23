@@ -14,7 +14,8 @@ export class ModalComponent implements OnInit, OnDestroy {
 	public currentRoom: ChatRoom;
 	public modalCB: Function;
 	private _currRoomSub: Subscription;
-	private _modalSub: Subscription;
+	private _modalCBSub: Subscription;
+	private _activeNameSub: Subscription;
 
 	constructor() {
 		this.activeModalName = '';
@@ -26,16 +27,19 @@ export class ModalComponent implements OnInit, OnDestroy {
 			if (rm) this.currentRoom = rm;
 		});
 
-		this._modalSub = this.state.modal.state().subscribe((data: any) => {
-			let { modal, cb } = data;
-			this.activeModalName = modal;
+		this._modalCBSub = this.state.modal.modalCB().subscribe((cb: Function) => {
 			this.modalCB = cb;
+		});
+
+		this._activeNameSub = this.state.modal.activeModalName().subscribe((modal: string) => {
+			this.activeModalName = modal;
 		});
 	}
 
 	ngOnDestroy(): void {
 		if (this._currRoomSub) this._currRoomSub.unsubscribe();
-		if (this._modalSub) this._modalSub.unsubscribe();
+		if (this._modalCBSub) this._modalCBSub.unsubscribe();
+		if (this._activeNameSub) this._activeNameSub.unsubscribe();
 	}
 
 	closeModal() {
@@ -58,10 +62,26 @@ export class ModalComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	_getModalSub(): Subscription {
-		if (isDevMode()) return this._modalSub;
+	_getModalCBSub(): Subscription {
+		if (isDevMode()) return this._modalCBSub;
 		else {
-			console.log(new Error('ERROR _getModalSub() is only available in dev mode.'));
+			console.log(new Error('ERROR _getModalCBSub() is only available in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getActiveNameSub(): Subscription {
+		if (isDevMode()) return this._activeNameSub;
+		else {
+			console.log(new Error('ERROR _getActiveNameSub() is only available in dev mode.'));
+			return undefined;
+		}
+	}
+
+	_getCurrentRoomSub(): Subscription {
+		if (isDevMode()) return this._currRoomSub;
+		else {
+			console.log(new Error('ERROR _getCurrentRoomSub() is only available in dev mode.'));
 			return undefined;
 		}
 	}

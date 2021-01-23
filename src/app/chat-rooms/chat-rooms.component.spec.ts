@@ -69,7 +69,11 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should have a function for leaving the current ChatRoom', () => {
-		let leaveRoomSpy = spyOn(chatRoomsComponent.state.room, 'leaveCurrentRoom').and.callThrough();
+		let leaveRoomSpy = spyOn(chatRoomsComponent.state.room, 'userLeaveCurrentRoom').and.callThrough();
+		const currentRoom = new ChatRoom('id', 'name', 6, 'owner');
+		const currentUser = new User('user', 'uid');
+		chatRoomsComponent.state.room._setCurrentRoom(currentRoom);
+		chatRoomsComponent._setCurrentUser(currentUser);
 
 		chatRoomsComponent.leaveRoom();
 
@@ -78,7 +82,7 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should have a function that returns the current ChatRoom', () => {
-		let rm = new ChatRoom('id', 'name', 6, 'ownerID');
+		let rm = new ChatRoom('id', 'name', 6, 'ownerID', [ new User('name', 'id') ]);
 		chatRoomsComponent._setCurrentRoom(rm);
 		expect(typeof chatRoomsComponent.getCurrentRoom).toEqual('function');
 		expect(chatRoomsComponent.getCurrentRoom()).toBeDefined();
@@ -86,7 +90,7 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should have a function that returns an array of Users in the current ChatRoom corresponding with the StateService', () => {
-		let rm = new ChatRoom('id', 'name', 6, 'ownerID');
+		let rm = new ChatRoom('id', 'name', 6, 'ownerID', [ new User('name', 'id') ]);
 		chatRoomsComponent._setCurrentRoom(rm);
 		expect(typeof chatRoomsComponent.getUsersInCurrentRoom).toEqual('function');
 		expect(chatRoomsComponent.getUsersInCurrentRoom()).toBeDefined();
@@ -94,7 +98,7 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should have a function that returns the ChatRoom list', () => {
-		chatRoomsComponent._setRoomsList([ new ChatRoom('id', 'name', 6, 'ownerID') ]);
+		chatRoomsComponent._setRoomsList([ new ChatRoom('id', 'name', 6, 'ownerID', [ new User('name', 'id') ]) ]);
 		expect(typeof chatRoomsComponent.getRoomsList).toEqual('function');
 		expect(chatRoomsComponent.getRoomsList()).toEqual(chatRoomsComponent._getRoomsList());
 	});
@@ -117,8 +121,8 @@ describe('ChatRoomsComponent', () => {
 
 	it('should have a functon for determining if the current user owns the current room', () => {
 		const dennyID = 'dennyID';
-		const room = new ChatRoom('id', 'room', 6, dennyID);
 		const user = new User('denny', dennyID);
+		const room = new ChatRoom('id', 'room', 6, dennyID, [ user ]);
 
 		let stateFnSpy = spyOn(chatRoomsComponent.state.room, 'userHasRoomPowers').and.callThrough();
 
@@ -132,23 +136,24 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should have a function for editing the current room', async () => {
-		const room = new ChatRoom('id', 'room', 6, 'dennyID');
+		const room = new ChatRoom('id', 'room', 6, 'dennyID', [ new User('name', 'id') ]);
 		const newRoom = new ChatRoom('id', 'new name', 6, 'dennyID');
-
+		const user = new User('denny', 'dennyID');
 		const modalSpy = spyOn(chatRoomsComponent.state.modal, 'editRoom').and.callFake(() => {
 			return new Promise((resolve) => {
 				resolve(newRoom);
 			});
 		});
-		const updateSpy = spyOn(chatRoomsComponent.state.room, 'updateRoom').and.callFake(() => {});
 
+		const updateSpy = spyOn(chatRoomsComponent.state.room, 'emitCurrentRoomUpdate').and.callFake(() => {});
+		chatRoomsComponent._setCurrentUser(user);
 		chatRoomsComponent._setCurrentRoom(room);
 
 		await chatRoomsComponent.editCurrentRoom();
 
 		expect(typeof chatRoomsComponent.editCurrentRoom).toEqual('function');
 		expect(modalSpy).toHaveBeenCalledWith(room);
-		expect(updateSpy).toHaveBeenCalledWith(newRoom);
+		expect(updateSpy).toHaveBeenCalledWith(newRoom, user);
 	});
 
 	// Init
@@ -184,10 +189,10 @@ describe('ChatRoomsComponent', () => {
 		expect(chatRoomsComponent._getSubscriptions().length).toBeGreaterThan(0);
 	});
 
-	it('should subscribe to the current ChatRoom via the state service on init', () => {
+	it('should subscribe to the current ChatRoom via the state service and update current users subscribers on init', () => {
 		let roomsListSubSpy = spyOn(chatRoomsComponent.state.room, 'currentRoom').and.callFake(() => {
 			return new Observable((sub: Subscriber<ChatRoom>) => {
-				let rm = new ChatRoom('id', 'name', 6, 'ownerID');
+				let rm = new ChatRoom('id', 'name', 6, 'ownerID', [ new User('name', 'id') ]);
 				sub.next(rm);
 			});
 		});

@@ -3,6 +3,7 @@ import { Subscription } from 'rxjs';
 import { StateService } from '../services/state/state.service';
 import { ChatRoom } from '../util/chatRoom';
 import { User } from '../util/user';
+import { Observable } from 'rxjs';
 
 @Component({
 	selector: 'app-chat-rooms',
@@ -11,6 +12,9 @@ import { User } from '../util/user';
 })
 export class ChatRoomsComponent implements OnInit, OnDestroy {
 	@Input() state: StateService;
+
+	public usersInCurrentRoom: Observable<Array<User>>;
+
 	private _roomsList: Array<any>;
 	private _currentRoom: ChatRoom;
 	private _currentUser: User;
@@ -44,6 +48,8 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 			this._currentUser = currentUser;
 		});
 		this._subscriptions.push(currentUserSub);
+
+		this.usersInCurrentRoom = this.state.room.usersInCurrentRoom();
 	}
 
 	ngOnDestroy(): void {
@@ -71,7 +77,7 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	}
 
 	leaveRoom(): void {
-		this.state.room.leaveCurrentRoom(this._currentUser);
+		if (this._currentUser && this._currentRoom) this.state.room.userLeaveCurrentRoom(this._currentUser);
 	}
 
 	async createRoom(): Promise<void> {
@@ -93,7 +99,18 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 
 	async editCurrentRoom(): Promise<void> {
 		let room = await this.state.modal.editRoom(this._currentRoom);
-		this.state.room.updateRoom(room);
+		this.state.room.emitCurrentRoomUpdate(room, this._currentUser);
+	}
+
+	performUserAction(user: User) {
+		// TODO unit test
+		if (
+			this._currentUser &&
+			this._currentRoom &&
+			this.state.room.userHasRoomPowers(this._currentUser, this._currentRoom)
+		) {
+			this.state.modal.performUserAction(user);
+		}
 	}
 
 	_setCurrentUser(user: User) {

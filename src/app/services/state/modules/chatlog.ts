@@ -1,18 +1,18 @@
 import { isDevMode } from '@angular/core';
 import { ChatMessage } from '../../../util/chatMessage';
-import { Observer, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { SocketService } from '../../socket.service';
 import { ChatRoom } from 'src/app/util/chatRoom';
+import { Freshy } from '../../../util/freshy';
 
 export class ChatLogStateModule {
-	private _chatLog: Array<ChatMessage>;
+	private _chatLog: Freshy<Array<ChatMessage>>;
+
 	private _socket: SocketService;
-	private _chatLogSubscribers: Array<Observer<Array<ChatMessage>>>;
 
 	constructor(socket: SocketService) {
-		this._chatLog = new Array();
+		this._chatLog = new Freshy<Array<ChatMessage>>([]);
 		this._socket = socket;
-		this._chatLogSubscribers = new Array();
 	}
 
 	parseChatLog(messages: Array<any>): Array<ChatMessage> {
@@ -27,28 +27,21 @@ export class ChatLogStateModule {
 	}
 
 	state(): Observable<Array<ChatMessage>> {
-		return new Observable((subscriber: Observer<any>) => {
-			this._chatLogSubscribers.push(subscriber);
-			subscriber.next(this._chatLog);
-		});
+		return this._chatLog.observableData;
 	}
 
 	chatLogIsDefined(): boolean {
-		return Array.isArray(this._chatLog);
+		return Array.isArray(this._chatLog.getData());
 	}
 
 	addMessageToChatLog(message: ChatMessage) {
-		this._chatLog.push(message);
-	}
-
-	updateChatLogSubscribers(): void {
-		this._chatLogSubscribers.forEach((sub: Observer<Array<ChatMessage>>) => {
-			sub.next(this._chatLog);
-		});
+		let messages = this._chatLog.getData();
+		messages.push(message);
+		this._chatLog.refresh(messages);
 	}
 
 	resetChatLog(): void {
-		this._chatLog = new Array();
+		this._chatLog.refresh([]);
 	}
 
 	sendMessage(message: ChatMessage, room: ChatRoom): boolean {
@@ -62,33 +55,24 @@ export class ChatLogStateModule {
 	}
 
 	_getChatLog(): Array<ChatMessage> {
-		if (isDevMode()) return this._chatLog;
+		if (isDevMode()) return this._chatLog.getData();
 		else {
-			console.log(new Error('ERROR StateService._getChatLog() is only availabe in dev mode.'));
+			console.log(new Error('ERROR _getChatLog() is only availabe in dev mode.'));
 			return undefined;
 		}
 	}
 
-	_setChatLog(log: Array<ChatMessage>): Array<ChatMessage> {
-		if (isDevMode()) return this._chatLog;
+	_setChatLog(log: Array<ChatMessage>) {
+		if (isDevMode()) this._chatLog.refresh(log);
 		else {
-			console.log(new Error('ERROR StateService._setChatLog() is only availabe in dev mode.'));
-			return undefined;
-		}
-	}
-
-	_getChatLogSubscribers(): Array<Observer<Array<ChatMessage>>> {
-		if (isDevMode()) return this._chatLogSubscribers;
-		else {
-			console.log(new Error('ERROR StateService._getChatLogSubscribers() is only availabe in dev mode.'));
-			return undefined;
+			console.log(new Error('ERROR _setChatLog() is only availabe in dev mode.'));
 		}
 	}
 
 	_getSocketService(): SocketService {
 		if (isDevMode()) return this._socket;
 		else {
-			console.log(new Error('ERROR StateService._getSocketService() is only availabe in dev mode.'));
+			console.log(new Error('ERROR _getSocketService() is only availabe in dev mode.'));
 			return undefined;
 		}
 	}

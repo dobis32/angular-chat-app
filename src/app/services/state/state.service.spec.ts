@@ -15,7 +15,7 @@ describe('StateService', () => {
 			providers: [ { provide: SocketService, useClass: MockSocketService } ]
 		});
 		service = TestBed.inject(StateService);
-		service.user._setUser(new User('Test user', 'test_nonce')); // login a user for convenience
+		service.user._setCurrentUser(new User('Test user', 'test_nonce')); // login a user for convenience
 	});
 
 	it('should be created', () => {
@@ -55,12 +55,20 @@ describe('StateService', () => {
 		expect(listenSpy).toHaveBeenCalledWith('roomsUpdate');
 	});
 
-	it('should listen to the "currentRoomUpdate" event from the SocketService', () => {
+	it('should listen to the "join" event from the SocketService', () => {
 		let listenSpy = spyOn(service._getSocketService(), 'listen').and.callThrough();
 
 		service.resetSocketSubs();
 
-		expect(listenSpy).toHaveBeenCalledWith('currentRoomUpdate');
+		expect(listenSpy).toHaveBeenCalledWith('join');
+	});
+
+	it('should listen to the "kick" event from the SocketService', () => {
+		let listenSpy = spyOn(service._getSocketService(), 'listen').and.callThrough();
+
+		service.resetSocketSubs();
+
+		expect(listenSpy).toHaveBeenCalledWith('kick');
 	});
 
 	it('should have a function to unsubscribe from all socket subscriptions', () => {
@@ -137,6 +145,13 @@ describe('StateService', () => {
 		expect(joinNotifySpy).toHaveBeenCalledWith(joinData.user);
 	});
 
+	it('should handle a "kick" notification appropriately', () => {
+		let kickNotifySpy = spyOn(service, 'roomNotifyUserKick').and.callFake(() => {});
+		let kickData = { notification: 'kick', user: 'denny' };
+		service.handleNotification(kickData);
+		expect(kickNotifySpy).toHaveBeenCalledWith(kickData.user);
+	});
+
 	it('should have a function to handle a "roomsUpdate" socket event', () => {
 		let parseAndUpdateSpy = spyOn(service.room, 'parseAndUpdateRooms').and.callFake(() => {});
 
@@ -146,19 +161,24 @@ describe('StateService', () => {
 		expect(parseAndUpdateSpy).toHaveBeenCalled();
 	});
 
-	it('should, upon handling a "currentRoomUpdate" socket event, update the current room', () => {
-		let updateCurrentRoomSpy = spyOn(service.room, 'updateCurrentRoom').and.callFake(() => {});
-		let rm = new ChatRoom('id', 'name', 6, 'denny');
-
+	it('should update the current room instance when a "join" socket event is being handled', () => {
+		let updateCurrentRoomSpy = spyOn(service.room, 'updateCurrentRoomInstance').and.callFake(() => {});
+		const roomToJoin = 'id';
+		let rm = new ChatRoom(roomToJoin, 'name', 6, 'denny');
+		service.room._setRoomsList([ rm ]);
 		service.room._setCurrentRoom(rm);
 
-		service.handleCurrentRoomUpdate({ rooms: [], roomToJoin: 'foo' });
+		service.handleJoinEvent({ room: roomToJoin });
 
-		expect(updateCurrentRoomSpy).toHaveBeenCalled();
+		expect(updateCurrentRoomSpy).toHaveBeenCalledWith(roomToJoin);
+
+		service.handleJoinEvent({});
+
+		expect(updateCurrentRoomSpy).toHaveBeenCalledWith(undefined);
 	});
 
-	it('should have a function to handle a "currentRoomUpdate" socket event', () => {
-		expect(typeof service.handleCurrentRoomUpdate).toEqual('function');
+	it('should have a function to handle a "join" socket event', () => {
+		expect(typeof service.handleJoinEvent).toEqual('function');
 	});
 
 	// Notification handlers

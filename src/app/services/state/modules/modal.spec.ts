@@ -11,10 +11,17 @@ describe('ModalStateModule', () => {
 		expect(modalStateModule).toBeTruthy();
 	});
 
-	it('should have a function that returns an observable of the active modal name and callback function', () => {
-		let obs = modalStateModule.state();
+	it('should have a function that returns an observable of the active modal name', () => {
+		let obs = modalStateModule.activeModalName();
 
-		expect(typeof modalStateModule.state).toEqual('function');
+		expect(typeof modalStateModule.activeModalName).toEqual('function');
+		expect(typeof obs.subscribe).toEqual('function');
+	});
+
+	it('should have a function that returns an observable of the active modal callback function', () => {
+		let obs = modalStateModule.modalCB();
+
+		expect(typeof modalStateModule.modalCB).toEqual('function');
 		expect(typeof obs.subscribe).toEqual('function');
 	});
 
@@ -30,10 +37,14 @@ describe('ModalStateModule', () => {
 		let cb = () => {
 			return true;
 		};
-		let refreshModalSubsSpy = spyOn(modalStateModule, 'refreshModalSubscriber').and.callThrough();
+		let refreshModalCBSpy = spyOn(modalStateModule._getModalCBFreshy(), 'refresh').and.callThrough();
+		let refreshActiveModalNameSpy = spyOn(
+			modalStateModule._getActiveModalNameFreshy(),
+			'refresh'
+		).and.callThrough();
 		let refreshModalActiveStatusSubsSpy = spyOn(
-			modalStateModule,
-			'refreshModalActiveStatusSubscriber'
+			modalStateModule._getModalActiveStatusFreshy(),
+			'refresh'
 		).and.callThrough();
 
 		modalStateModule._setModalActiveStatus(false);
@@ -43,7 +54,8 @@ describe('ModalStateModule', () => {
 		modalStateModule.openModal(modalName, cb);
 
 		expect(typeof modalStateModule.openModal).toEqual('function');
-		expect(refreshModalSubsSpy).toHaveBeenCalled();
+		expect(refreshActiveModalNameSpy).toHaveBeenCalled();
+		expect(refreshModalCBSpy).toHaveBeenCalled();
 		expect(refreshModalActiveStatusSubsSpy).toHaveBeenCalled();
 		expect(modalStateModule._getModalActiveStatus()).toBeTrue();
 		expect(modalStateModule._getActiveModalName()).toEqual(modalName);
@@ -52,10 +64,14 @@ describe('ModalStateModule', () => {
 
 	it('should have a function to close the app modal', () => {
 		let initStatus = true;
-		let refreshModalSubsSpy = spyOn(modalStateModule, 'refreshModalSubscriber').and.callThrough();
+		let refreshModalCBSpy = spyOn(modalStateModule._getModalCBFreshy(), 'refresh').and.callThrough();
+		let refreshActiveModalNameSpy = spyOn(
+			modalStateModule._getActiveModalNameFreshy(),
+			'refresh'
+		).and.callThrough();
 		let refreshModalActiveStatusSubsSpy = spyOn(
-			modalStateModule,
-			'refreshModalActiveStatusSubscriber'
+			modalStateModule._getModalActiveStatusFreshy(),
+			'refresh'
 		).and.callThrough();
 
 		modalStateModule._setModalActiveStatus(initStatus);
@@ -63,34 +79,9 @@ describe('ModalStateModule', () => {
 
 		expect(typeof modalStateModule.closeModal).toEqual('function');
 		expect(modalStateModule._getModalActiveStatus()).toBeFalse();
-		expect(refreshModalSubsSpy).toHaveBeenCalled();
+		expect(refreshModalCBSpy).toHaveBeenCalled();
+		expect(refreshActiveModalNameSpy).toHaveBeenCalled();
 		expect(refreshModalActiveStatusSubsSpy).toHaveBeenCalled();
-	});
-
-	it('should have a function to refresh the observer of the modal active status', () => {
-		let sub = modalStateModule.modalActiveStatus().subscribe();
-		let activeStatusObserver = modalStateModule._getModalActiveStatusSubscriber();
-		let observerSpy = spyOn(activeStatusObserver, 'next').and.callThrough();
-
-		modalStateModule.refreshModalActiveStatusSubscriber();
-
-		expect(typeof modalStateModule.refreshModalActiveStatusSubscriber).toEqual('function');
-		expect(observerSpy).toHaveBeenCalled();
-
-		sub.unsubscribe();
-	});
-
-	it('should have a function to refresh the observer of the modal', () => {
-		let sub = modalStateModule.state().subscribe();
-		let modalObserver = modalStateModule._getModalSubscriber();
-		let observerSpy = spyOn(modalObserver, 'next').and.callThrough();
-
-		modalStateModule.refreshModalSubscriber();
-
-		expect(typeof modalStateModule.refreshModalSubscriber).toEqual('function');
-		expect(observerSpy).toHaveBeenCalled();
-
-		sub.unsubscribe();
 	});
 
 	it('should have the current modal callback function', () => {
