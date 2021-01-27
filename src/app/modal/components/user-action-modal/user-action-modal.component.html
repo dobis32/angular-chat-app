@@ -1,15 +1,16 @@
 <div class="modal-card" (click)="stopPropagation($event)">
     <h4>{{ user.getName() }}</h4>
+    <h6 *ngIf="">[Admin]</h6>
     <div class="form-row">
-        <button (click)="promoteUser()">Promote to Admin</button>
+        <button (click)="submit('promote')">Promote to Admin</button>
     </div>
     <div class="form-row">
-        <button (click)="demoteUser()">Demote from Admin</button>
+        <button (click)="submit('demote')">Demote from Admin</button>
     </div>
     <div class="form-row">
-        <button (click)="kickUser()">Kick User</button>
+        <button (click)="submit('kick')">Kick User</button>
     </div>
     <div class="form-row">
-        <button (click)="banUser()">Ban User</button>
+        <button (click)="submit('ban')">Ban User</button>
     </div>
 </div>

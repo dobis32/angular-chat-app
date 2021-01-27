@@ -69,11 +69,8 @@ io.on('connection', (socket) => {
 
 	socket.on('leave', ({ user, room }) => {
 		try {
-			console.log(`[user ${user}] leaving [room ${room}]`);
 			let roomInstance = roomsUtility.getRoomByID(room);
 			let userInstance = usersUtility.getUserByID(user);
-
-			console.log(roomInstance, userInstance);
 
 			if (!roomInstance || !userInstance) throw new Error('Room or User does not exist');
 
@@ -90,8 +87,6 @@ io.on('connection', (socket) => {
 
 	socket.on('kick', ({ user, room }) => {
 		try {
-			console.log(`[user ${user}] being kicked from [room ${room}]`);
-
 			let roomInstance = roomsUtility.getRoomByID(room);
 			let userToKick = usersUtility.getUserByID(user);
 
@@ -109,7 +104,6 @@ io.on('connection', (socket) => {
 
 	socket.on('createRoom', ({ name, capacity, password, userID }) => {
 		try {
-			console.log('create room', name, capacity, password, userID);
 			if (!password) password = '';
 
 			let userInstance = usersUtility.getUserByID(user);
@@ -138,10 +132,8 @@ io.on('connection', (socket) => {
 			if (!roomInstance || !userInstance) throw new Error('Failed to find instance of room.');
 
 			roomInstance.updateCredentials(name, capacity, password);
-			console.log('room instance updated', roomInstance);
 
 			let roomsListData = roomsUtility.roomsListJSON(usersUtility);
-			console.log('rooms list data', roomsListData);
 			comsUtility.roomsUpdateToAllUsers(io, roomsListData);
 		} catch (error) {
 			console.log(error);
@@ -155,7 +147,6 @@ io.on('connection', (socket) => {
 		if (user) {
 			user.setSocket(socket.id);
 			comsUtility.successfulLogin(socket, user.toJSON());
-			console.log('just logged in:', user);
 		} else comsUtility.failedLogin(socket);
 	});
 

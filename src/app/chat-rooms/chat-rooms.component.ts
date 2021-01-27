@@ -102,14 +102,32 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		this.state.room.emitCurrentRoomUpdate(room, this._currentUser);
 	}
 
-	performUserAction(user: User) {
+	async performUserAction(user: User) {
 		// TODO unit test
+
 		if (
 			this._currentUser &&
 			this._currentRoom &&
 			this.state.room.userHasRoomPowers(this._currentUser, this._currentRoom)
 		) {
-			this.state.modal.performUserAction(user);
+			const action = await this.state.modal.performUserAction(user);
+			console.log('PERFORM ACTION', action);
+			this.handleUserAction(action, user);
+		}
+	}
+
+	handleUserAction(action: string, user: User) {
+		// TODO unit test
+		switch (action) {
+			case 'promote':
+				break;
+			case 'demote':
+				break;
+			case 'kick':
+				this.state.room.kickUserFromCurrentRoom(user);
+				break;
+			case 'ban':
+				break;
 		}
 	}
 

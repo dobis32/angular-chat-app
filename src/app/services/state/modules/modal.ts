@@ -8,10 +8,12 @@ export class ModalStateModule {
 	private _modalActiveStatus: Freshy<boolean>;
 	private _modalCB: Freshy<Function>;
 	private _activeModalName: Freshy<string>;
+	private _modalBuffer: Freshy<any>; // TODO unit test
 	constructor() {
 		this._modalActiveStatus = new Freshy<boolean>(false);
 		this._modalCB = new Freshy<Function>(() => {});
 		this._activeModalName = new Freshy<string>('');
+		this._modalBuffer = new Freshy<any>();
 	}
 
 	promptRoomPassword(): Promise<string> {
@@ -73,10 +75,11 @@ export class ModalStateModule {
 		return this._modalActiveStatus.observableData;
 	}
 
-	openModal(modal: string, cb: Function) {
-		this._modalActiveStatus.refresh(true);
+	openModal(modal: string, cb: Function, buffer?: any) {
 		this._activeModalName.refresh(modal);
 		this._modalCB.refresh(cb);
+		this._modalBuffer.refresh(buffer); // TODO update unit test for check this
+		this._modalActiveStatus.refresh(true);
 	}
 
 	closeModal() {
@@ -86,9 +89,22 @@ export class ModalStateModule {
 	}
 
 	performUserAction(user: User) {
-		this.openModal('userAction', () => {
-			return user;
+		console.log('perform action');
+		return new Promise<string>((resolve) => {
+			// TODO update unit test; buffer arg passed to modal should be user
+
+			this.openModal(
+				'userAction',
+				(action: string) => {
+					resolve(action);
+				},
+				user
+			);
 		});
+	}
+
+	getBuffer(): any {
+		return this._modalBuffer;
 	}
 
 	_getActiveModalName(): string {

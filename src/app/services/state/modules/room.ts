@@ -129,10 +129,6 @@ export class RoomStateModule {
 		// TODO implement & unit test
 	}
 
-	kickUser(user: User) {
-		// TODO implement & unit test
-	}
-
 	banUser(user: User) {
 		// TODO implement & unit test
 	}

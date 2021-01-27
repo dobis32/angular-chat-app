@@ -13,6 +13,7 @@ export class ModalComponent implements OnInit, OnDestroy {
 	public activeModalName: string;
 	public currentRoom: ChatRoom;
 	public modalCB: Function;
+	public buffer: any;
 	private _currRoomSub: Subscription;
 	private _modalCBSub: Subscription;
 	private _activeNameSub: Subscription;
@@ -34,6 +35,8 @@ export class ModalComponent implements OnInit, OnDestroy {
 		this._activeNameSub = this.state.modal.activeModalName().subscribe((modal: string) => {
 			this.activeModalName = modal;
 		});
+
+		this.buffer = this.state.modal.getBuffer(); // TODO unit test
 	}
 
 	ngOnDestroy(): void {

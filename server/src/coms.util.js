@@ -14,7 +14,6 @@ module.exports = class ComsUtility {
 	}
 
 	roomsUpdateToAllUsers(io, roomsListJSON) {
-		console.log('emitting roomsUpdate', roomsListJSON);
 		io.emit('roomsUpdate', roomsListJSON);
 	}
 

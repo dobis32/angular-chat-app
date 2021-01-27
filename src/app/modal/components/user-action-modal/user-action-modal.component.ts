@@ -1,5 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
-import { StateService } from 'src/app/services/state/state.service';
+import { Component, OnInit, Input, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { User } from 'src/app/util/user';
 
 @Component({
@@ -7,45 +6,26 @@ import { User } from 'src/app/util/user';
 	templateUrl: './user-action-modal.component.html',
 	styleUrls: [ './user-action-modal.component.scss' ]
 })
-export class UserActionModalComponent implements OnInit {
+export class UserActionModalComponent implements OnInit, OnDestroy {
+	@Input() user: User;
 	@Input() cb: Function;
-	@Input() state: StateService;
-
-	public user: User;
+	@Output() close: EventEmitter<void> = new EventEmitter<void>(); // TODO unit test
 
 	constructor() {
 		this.user = new User('', '');
 	}
 
-	ngOnInit(): void {
-		this.user = this.cb();
-	}
+	ngOnInit(): void {}
 
-	closeModal(): void {
-		this.state.modal.closeModal();
+	ngOnDestroy(): void {}
+
+	submit(action: string): void {
+		// TODO unit test
+		this.cb(action);
+		this.close.emit();
 	}
 
 	stopPropagation(event: Event) {
 		event.stopPropagation();
-	}
-
-	promoteUser() {
-		// TODO unit test
-		this.state.room.promoteUser(this.user);
-	}
-
-	demoteUser() {
-		// TODO unit test
-		this.state.room.demoteUser(this.user);
-	}
-
-	kickUser() {
-		// TODO unit test
-		this.state.room.kickUser(this.user);
-	}
-
-	banUser() {
-		// TODO unit test
-		this.state.room.banUser(this.user);
 	}
 }

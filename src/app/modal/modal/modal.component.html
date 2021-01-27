@@ -2,6 +2,6 @@
     <app-password-modal *ngIf="activeModalName == 'promptRoomPassword'" [cb]="modalCB" (submit)="closeModal()"></app-password-modal>
     <app-create-room-modal *ngIf="activeModalName == 'createRoom'" [cb]="modalCB" (submit)="closeModal()"></app-create-room-modal>
     <app-edit-room-modal *ngIf="activeModalName == 'editRoom'" [roomToEdit]="currentRoom" [cb]="modalCB" (submit)="closeModal()"></app-edit-room-modal>
-    <app-user-action-modal *ngIf="activeModalName == 'userAction'" [cb]="modalCB" [state]="state"></app-user-action-modal>
+    <app-user-action-modal *ngIf="activeModalName == 'userAction'" [cb]="modalCB" [user]="buffer.getData()" (close)="closeModal()"></app-user-action-modal>
 
 </div>

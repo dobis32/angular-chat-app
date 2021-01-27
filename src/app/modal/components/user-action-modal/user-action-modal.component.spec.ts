@@ -3,13 +3,16 @@ import { Component, DebugElement } from '@angular/core';
 import { UserActionModalComponent } from './user-action-modal.component';
 import { StateService } from 'src/app/services/state/state.service';
 import { By } from '@angular/platform-browser';
+import { User } from 'src/app/util/user';
 
 @Component({
 	selector: `host-component`,
 	template: `<app-user-action-modal [cb]="cb" [state]="getState()"></app-user-action-modal>`
 })
 class TestHostComponent {
-	public cb = () => {};
+	public cb = () => {
+		return new User('denny', 'id');
+	};
 	constructor(private state: StateService) {}
 
 	handleSubmit() {}
@@ -42,13 +45,6 @@ describe('UserActionModalComponent', () => {
 	it('should create', () => {
 		expect(hostComponent).toBeTruthy();
 		expect(userActionModalComponent).toBeTruthy();
-	});
-
-	it('should have a function that closes the modal', () => {
-		const closeSpy = spyOn(userActionModalComponent.state.modal, 'closeModal').and.callFake(() => {});
-
-		expect(typeof userActionModalComponent.closeModal).toEqual('function');
-		expect(closeSpy).toHaveBeenCalled();
 	});
 
 	it('should have a function for stopping event propogation', () => {
