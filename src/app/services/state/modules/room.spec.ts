@@ -161,24 +161,48 @@ describe('RoomStateModule', () => {
 
 	it('should have a function for joining a ChatRoom that should emit a "join" socket event if said ChatRoom is joinable', () => {
 		let user = new User('denny', 'uid');
-		let room = new ChatRoom('rid', 'roomName', 6, 'uid');
+		let pw = 'pw';
+		let room = new ChatRoom('rid', 'roomName', 6, 'uid', [], pw);
 		let joinableSpy = spyOn(room, 'joinable').and.callThrough();
 		let emitSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
 			return true;
 		});
 
-		roomStateModule.joinRoom(user, room);
+		roomStateModule.joinRoom(user, room, pw);
 
 		expect(typeof roomStateModule.joinRoom).toEqual('function');
 		expect(joinableSpy).toHaveBeenCalled();
 		expect(emitSpy).toHaveBeenCalledWith('join', { user: user.getId(), room: room.getRoomID() });
-		expect(room.joinable()).toBeTrue();
+		expect(room.joinable(user.getId(), pw)).toBeTrue();
 	});
 
-	it('should prevent a "join" socket event from being emitted if a room is not joinable', () => {
+	it('should, when trying to join a room, prevent a "join" socket event from being emitted if the wrong password is provided', () => {
 		let user = new User('denny', 'uid');
 		let pw = 'pw';
-		let room = new ChatRoom('rid', 'roomName', 6, 'uid', [], pw);
+		let room = new ChatRoom('rid', 'roomName', 6, 'uid', [], 'foo');
+		let joinableSpy = spyOn(room, 'joinable').and.callThrough();
+		let emitSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
+			return true;
+		});
+
+		roomStateModule.joinRoom(user, room, pw);
+
+		expect(joinableSpy).toHaveBeenCalled();
+		expect(emitSpy).toHaveBeenCalledTimes(0);
+		expect(room.joinable(user.getId())).toBeFalse();
+	});
+
+	it('should, when trying to join a room, prevent a "join" socket event from being emitted if a room is full', () => {
+		let user = new User('denny', 'uid');
+		let usersInRoom = [
+			new User('name', 'id1'),
+			new User('name', 'id2'),
+			new User('name', 'id3'),
+			new User('name', 'id4'),
+			new User('name', 'id5'),
+			new User('name', 'id6')
+		];
+		let room = new ChatRoom('rid', 'roomName', 6, 'uid', usersInRoom);
 		let joinableSpy = spyOn(room, 'joinable').and.callThrough();
 		let emitSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
 			return true;
@@ -188,7 +212,23 @@ describe('RoomStateModule', () => {
 
 		expect(joinableSpy).toHaveBeenCalled();
 		expect(emitSpy).toHaveBeenCalledTimes(0);
-		expect(room.joinable()).toBeFalse();
+		expect(room.joinable(user.getId())).toBeFalse();
+	});
+
+	it('should, when tyring to join a room, prevent a "join" socket event from being emitted if the current user is banned from the room', () => {
+		let user = new User('denny', 'uid');
+		let pw = 'pw';
+		let room = new ChatRoom('rid', 'roomName', 6, 'uid', [], pw, [], [ user.getId() ]);
+		let joinableSpy = spyOn(room, 'joinable').and.callThrough();
+		let emitSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
+			return true;
+		});
+
+		roomStateModule.joinRoom(user, room);
+
+		expect(joinableSpy).toHaveBeenCalled();
+		expect(emitSpy).toHaveBeenCalledTimes(0);
+		expect(room.joinable(user.getId())).toBeFalse();
 	});
 
 	it('should have a function for getting the current ChatRoom instance', () => {
@@ -275,28 +315,32 @@ describe('RoomStateModule', () => {
 		expect(typeof obs.subscribe).toEqual('function');
 	});
 
-	it('should have a function to kick a user from the current room', () => {
+	it('should have a function to kick a user from a ChatRoom', () => {
 		const userToKick = new User('name', 'id');
+		const room = new ChatRoom('roomID', 'roomName', 6, 'owner');
 		const emitSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
 			return true;
 		});
 		roomStateModule._setCurrentRoom(new ChatRoom('id', 'name', 6, 'owner'));
 
-		roomStateModule.kickUserFromCurrentRoom(userToKick);
+		roomStateModule.kickUser(userToKick, room);
 
-		expect(typeof roomStateModule.kickUserFromCurrentRoom).toEqual('function');
+		expect(typeof roomStateModule.kickUser).toEqual('function');
 		expect(emitSpy).toHaveBeenCalled();
 	});
 
-	it('should not emit a kick event when attempting to kick a user and there is no current room', () => {
+	it('should have a function to ban a user from a ChatRoom', () => {
 		const userToKick = new User('name', 'id');
+		const room = new ChatRoom('roomID', 'roomName', 6, 'owner');
 		const emitSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
 			return true;
 		});
+		roomStateModule._setCurrentRoom(new ChatRoom('id', 'name', 6, 'owner'));
 
-		roomStateModule.kickUserFromCurrentRoom(userToKick);
+		roomStateModule.banUser(userToKick, room);
 
-		expect(emitSpy).toHaveBeenCalledTimes(0);
+		expect(typeof roomStateModule.kickUser).toEqual('function');
+		expect(emitSpy).toHaveBeenCalled();
 	});
 
 	it('should have a function for updating the current room instance based on room ID', () => {
@@ -340,5 +384,31 @@ describe('RoomStateModule', () => {
 		expect(findRoomSpy).toHaveBeenCalledWith('');
 		expect(currentRoomRefreshSpy).toHaveBeenCalledWith(undefined);
 		expect(currentUsersRefreshSpy).toHaveBeenCalledWith([]);
+	});
+
+	it('should have a function to promote a User in a given ChatRoom', () => {
+		const room = new ChatRoom('id', 'name', 6, 'owner');
+		const user = new User('name', 'id');
+		const promoteSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
+			return true;
+		});
+
+		roomStateModule.promoteUser(user, room);
+
+		expect(typeof roomStateModule.promoteUser).toEqual('function');
+		expect(promoteSpy).toHaveBeenCalledWith('promote', { user: user.getId(), room: room.getRoomID() });
+	});
+
+	it('should have a function to demote a User in a given ChatRoom', () => {
+		const room = new ChatRoom('id', 'name', 6, 'owner');
+		const user = new User('name', 'id');
+		const demoteSpy = spyOn(roomStateModule._getSocketService(), 'emit').and.callFake(() => {
+			return true;
+		});
+
+		roomStateModule.demoteUser(user, room);
+
+		expect(typeof roomStateModule.demoteUser).toEqual('function');
+		expect(demoteSpy).toHaveBeenCalledWith('demote', { user: user.getId(), room: room.getRoomID() });
 	});
 });

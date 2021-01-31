@@ -30,14 +30,25 @@ export class ChatRoom {
 		this._bans = bans ? bans : new Array();
 	}
 
-	joinable(pw?: string) {
+	joinable(userID, pw?: string) {
 		if (this._capacity == this._users.length) return false;
 		if (this._password != pw && this._password.length) return false;
+		if (this._bans.find((id) => id == userID)) return false;
 		else return true;
 	}
 
 	userJoin(user: User) {
 		this._users.push(user);
+	}
+
+	promoteUser(user: User) {
+		const isAdmin = this._admins.find((uid: string) => uid == user.getId());
+		if (!isAdmin) this._admins.push(user.getId());
+	}
+
+	demoteUser(user: User) {
+		const updatedAdmins = this._admins.filter((uid: string) => uid != user.getId());
+		this._admins = updatedAdmins;
 	}
 
 	isPrivate(): boolean {

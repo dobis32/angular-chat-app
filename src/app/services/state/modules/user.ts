@@ -1,6 +1,6 @@
 import { isDevMode } from '@angular/core';
 import { User } from '../../../util/user';
-import { Observer, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { SocketService } from '../../socket.service';
 import { Freshy } from 'src/app/util/freshy';
 export class UserStateModule {

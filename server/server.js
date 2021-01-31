@@ -56,7 +56,7 @@ io.on('connection', (socket) => {
 			if (!roomInstance || roomInstance.isFull() || !userInstance)
 				throw new Error('Room is full or does not exist');
 
-			if (!roomInstance.joinUser(user)) throw new Error('Room is full');
+			if (!roomInstance.joinUser(user)) throw new Error('Failed to join room');
 
 			let roomsListData = roomsUtility.roomsListJSON(usersUtility);
 
@@ -85,19 +85,46 @@ io.on('connection', (socket) => {
 		}
 	});
 
-	socket.on('kick', ({ user, room }) => {
+	socket.on('kick', ({ user, room, ban }) => {
 		try {
 			let roomInstance = roomsUtility.getRoomByID(room);
 			let userToKick = usersUtility.getUserByID(user);
-
 			if (!roomInstance || !userToKick) throw new Error('Room or User does not exist');
 
 			roomInstance.removeUser(user);
-
+			if (ban) roomInstance.banUser(user);
 			let roomsListData = roomsUtility.roomsListJSON(usersUtility);
-			comsUtility.userWasKicked(io, userToKick, roomInstance, roomsListData);
+			if (ban) comsUtility.userWasBanned(io, userToKick, roomInstance, roomsListData);
+			else comsUtility.userWasKicked(io, userToKick, roomInstance, roomsListData);
 		} catch (error) {
-			console.log(error);
+			comsUtility.emitError(socket, error);
+		}
+	});
+
+	socket.on('promote', ({ user, room }) => {
+		try {
+			let roomInstance = roomsUtility.getRoomByID(room);
+			let userToPromote = usersUtility.getUserByID(user);
+			if (!roomInstance || !userToPromote) throw new Error('Room or User does not exist');
+
+			roomInstance.promoteUser(userToPromote.getID());
+			let roomsListData = roomsUtility.roomsListJSON(usersUtility);
+			comsUtility.roomsUpdateToAllUsers(io, roomsListData);
+		} catch (error) {
+			comsUtility.emitError(socket, error);
+		}
+	});
+
+	socket.on('demote', ({ user, room }) => {
+		try {
+			let roomInstance = roomsUtility.getRoomByID(room);
+			let userToDemote = usersUtility.getUserByID(user);
+			if (!roomInstance || !userToDemote) throw new Error('Room or User does not exist');
+
+			roomInstance.demoteUser(userToDemote.getID());
+			let roomsListData = roomsUtility.roomsListJSON(usersUtility);
+			comsUtility.roomsUpdateToAllUsers(io, roomsListData);
+		} catch (error) {
 			comsUtility.emitError(socket, error);
 		}
 	});

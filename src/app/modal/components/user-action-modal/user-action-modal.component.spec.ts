@@ -7,11 +7,12 @@ import { User } from 'src/app/util/user';
 
 @Component({
 	selector: `host-component`,
-	template: `<app-user-action-modal [cb]="cb" [state]="getState()"></app-user-action-modal>`
+	template: `<app-user-action-modal [cb]="cb" [user]="buffer"></app-user-action-modal>`
 })
 class TestHostComponent {
-	public cb = () => {
-		return new User('denny', 'id');
+	public buffer = new User('denny', 'id');
+	public cb = (action: string) => {
+		return 'action';
 	};
 	constructor(private state: StateService) {}
 
@@ -55,5 +56,23 @@ describe('UserActionModalComponent', () => {
 
 		expect(typeof userActionModalComponent.stopPropagation).toEqual('function');
 		expect(stopPropSpy).toHaveBeenCalled();
+	});
+
+	it('should have a functon for submitting an action to the parent component', () => {
+		const cbSpy = spyOn(userActionModalComponent, 'cb').and.callThrough();
+		const emitSpy = spyOn(userActionModalComponent.close, 'emit').and.callThrough();
+		const action: string = 'action';
+
+		userActionModalComponent.submit(action);
+
+		expect(typeof userActionModalComponent.submit).toEqual('function');
+		expect(cbSpy).toHaveBeenCalled();
+		expect(emitSpy).toHaveBeenCalled();
+	});
+
+	it('should get data about the user receiving the action from the parent component', () => {
+		const user = userActionModalComponent.user;
+		const parentBuffer = hostComponent.buffer;
+		expect(user).toEqual(parentBuffer);
 	});
 });

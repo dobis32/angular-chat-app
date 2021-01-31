@@ -118,7 +118,7 @@ export class StateService {
 	handleRoomsUpdate(data: any) {
 		this.room.parseAndUpdateRooms(data);
 		const rm = this.room.getCurrentRoom();
-		if (rm) this.room.updateCurrentRoomInstance(rm.getRoomID());
+		if (rm) this.room.updateCurrentRoomInstance(rm.getRoomID(), this.user.getCurrentUser());
 	}
 
 	// Notifications

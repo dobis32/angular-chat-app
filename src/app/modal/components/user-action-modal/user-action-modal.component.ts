@@ -6,10 +6,10 @@ import { User } from 'src/app/util/user';
 	templateUrl: './user-action-modal.component.html',
 	styleUrls: [ './user-action-modal.component.scss' ]
 })
-export class UserActionModalComponent implements OnInit, OnDestroy {
+export class UserActionModalComponent implements OnInit {
 	@Input() user: User;
 	@Input() cb: Function;
-	@Output() close: EventEmitter<void> = new EventEmitter<void>(); // TODO unit test
+	@Output() close: EventEmitter<void> = new EventEmitter<void>();
 
 	constructor() {
 		this.user = new User('', '');
@@ -17,10 +17,7 @@ export class UserActionModalComponent implements OnInit, OnDestroy {
 
 	ngOnInit(): void {}
 
-	ngOnDestroy(): void {}
-
 	submit(action: string): void {
-		// TODO unit test
 		this.cb(action);
 		this.close.emit();
 	}

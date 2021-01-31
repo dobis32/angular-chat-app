@@ -1,5 +1,6 @@
 import { ModalStateModule } from './modal';
 import { ChatRoom } from 'src/app/util/chatRoom';
+import { User } from 'src/app/util/user';
 
 describe('ModalStateModule', () => {
 	let modalStateModule: ModalStateModule;
@@ -32,11 +33,20 @@ describe('ModalStateModule', () => {
 		expect(typeof obs.subscribe).toEqual('function');
 	});
 
+	it('should have a function that returns the modal buffer Freshy', () => {
+		let dataBufferFreshy = modalStateModule.getBuffer();
+
+		expect(typeof modalStateModule.getBuffer).toEqual('function');
+		expect(typeof dataBufferFreshy.getData).toEqual('function');
+		expect(typeof dataBufferFreshy.refresh).toEqual('function');
+	});
+
 	it('should have a function to open the app modal and set the modal-active status and callback function', () => {
 		let modalName = 'test';
 		let cb = () => {
 			return true;
 		};
+		let bufferData = { foo: 123 };
 		let refreshModalCBSpy = spyOn(modalStateModule._getModalCBFreshy(), 'refresh').and.callThrough();
 		let refreshActiveModalNameSpy = spyOn(
 			modalStateModule._getActiveModalNameFreshy(),
@@ -46,20 +56,15 @@ describe('ModalStateModule', () => {
 			modalStateModule._getModalActiveStatusFreshy(),
 			'refresh'
 		).and.callThrough();
+		let refreshModalBufferSubsSpy = spyOn(modalStateModule._getModalBufferFreshy(), 'refresh');
 
-		modalStateModule._setModalActiveStatus(false);
-		modalStateModule._setModalCB(undefined);
-		modalStateModule._setActiveModalName(undefined);
-
-		modalStateModule.openModal(modalName, cb);
+		modalStateModule.openModal(modalName, cb, bufferData);
 
 		expect(typeof modalStateModule.openModal).toEqual('function');
-		expect(refreshActiveModalNameSpy).toHaveBeenCalled();
-		expect(refreshModalCBSpy).toHaveBeenCalled();
-		expect(refreshModalActiveStatusSubsSpy).toHaveBeenCalled();
-		expect(modalStateModule._getModalActiveStatus()).toBeTrue();
-		expect(modalStateModule._getActiveModalName()).toEqual(modalName);
-		expect(modalStateModule._getModalCB()).toEqual(cb);
+		expect(refreshActiveModalNameSpy).toHaveBeenCalledWith(modalName);
+		expect(refreshModalCBSpy).toHaveBeenCalledWith(cb);
+		expect(refreshModalActiveStatusSubsSpy).toHaveBeenCalledWith(true);
+		expect(refreshModalBufferSubsSpy).toHaveBeenCalledWith(bufferData);
 	});
 
 	it('should have a function to close the app modal', () => {
@@ -73,6 +78,7 @@ describe('ModalStateModule', () => {
 			modalStateModule._getModalActiveStatusFreshy(),
 			'refresh'
 		).and.callThrough();
+		let refreshModalBufferSubsSpy = spyOn(modalStateModule._getModalBufferFreshy(), 'refresh').and.callThrough();
 
 		modalStateModule._setModalActiveStatus(initStatus);
 		modalStateModule.closeModal();
@@ -82,6 +88,7 @@ describe('ModalStateModule', () => {
 		expect(refreshModalCBSpy).toHaveBeenCalled();
 		expect(refreshActiveModalNameSpy).toHaveBeenCalled();
 		expect(refreshModalActiveStatusSubsSpy).toHaveBeenCalled();
+		expect(refreshModalBufferSubsSpy).toHaveBeenCalled();
 	});
 
 	it('should have the current modal callback function', () => {
@@ -128,5 +135,17 @@ describe('ModalStateModule', () => {
 
 		expect(typeof modalStateModule.createRoom).toEqual('function');
 		expect(modalSpy).toHaveBeenCalled();
+	});
+
+	it('should have a function to prompt a the user for an action to perform', () => {
+		const user = new User('name', 'id');
+		let openSpy = spyOn(modalStateModule, 'openModal').and.callThrough();
+
+		modalStateModule.performUserAction(user);
+
+		expect(typeof modalStateModule.performUserAction).toEqual('function');
+		expect(openSpy).toHaveBeenCalled();
+
+		modalStateModule.closeModal();
 	});
 });

@@ -8,7 +8,7 @@ export class ModalStateModule {
 	private _modalActiveStatus: Freshy<boolean>;
 	private _modalCB: Freshy<Function>;
 	private _activeModalName: Freshy<string>;
-	private _modalBuffer: Freshy<any>; // TODO unit test
+	private _modalBuffer: Freshy<any>;
 	constructor() {
 		this._modalActiveStatus = new Freshy<boolean>(false);
 		this._modalCB = new Freshy<Function>(() => {});
@@ -78,7 +78,7 @@ export class ModalStateModule {
 	openModal(modal: string, cb: Function, buffer?: any) {
 		this._activeModalName.refresh(modal);
 		this._modalCB.refresh(cb);
-		this._modalBuffer.refresh(buffer); // TODO update unit test for check this
+		this._modalBuffer.refresh(buffer);
 		this._modalActiveStatus.refresh(true);
 	}
 
@@ -86,13 +86,12 @@ export class ModalStateModule {
 		this._modalActiveStatus.refresh(false);
 		this._activeModalName.refresh('');
 		this._modalCB.refresh(() => {});
+		this._modalBuffer.refresh(undefined);
 	}
 
 	performUserAction(user: User) {
 		console.log('perform action');
 		return new Promise<string>((resolve) => {
-			// TODO update unit test; buffer arg passed to modal should be user
-
 			this.openModal(
 				'userAction',
 				(action: string) => {
@@ -152,6 +151,20 @@ export class ModalStateModule {
 		}
 	}
 
+	_getModalBuffer(): any {
+		if (isDevMode()) return this._modalBuffer.getData();
+		else {
+			console.log(new Error('ERROR StateService._getModalBuffer() is only availabe in dev mode.'));
+		}
+	}
+
+	_setModalBuffer(data: any) {
+		if (isDevMode()) this._modalBuffer = data;
+		else {
+			console.log(new Error('ERROR StateService._setModalBuffer() is only availabe in dev mode.'));
+		}
+	}
+
 	_getModalActiveStatusFreshy(): Freshy<boolean> {
 		if (isDevMode()) return this._modalActiveStatus;
 		else {
@@ -170,6 +183,12 @@ export class ModalStateModule {
 		if (isDevMode()) return this._modalCB;
 		else {
 			console.log(new Error('ERROR StateService._getModalCBFreshy() is only availabe in dev mode.'));
+		}
+	}
+	_getModalBufferFreshy(): Freshy<any> {
+		if (isDevMode()) return this._modalBuffer;
+		else {
+			console.log(new Error('ERROR StateService._getModalBufferFreshy() is only availabe in dev mode.'));
 		}
 	}
 }

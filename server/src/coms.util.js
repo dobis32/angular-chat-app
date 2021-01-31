@@ -71,4 +71,10 @@ module.exports = class ComsUtility {
 		this.emitKickNotificationToRoom(io, roomInstance.getID(), user.getName());
 		this.roomsUpdateToAllUsers(io, roomsListJSON);
 	}
+
+	userWasBanned(io, user, roomInstance, roomsListJSON) {
+		this.kickUser(io, user, roomInstance, true);
+		this.emitKickNotificationToRoom(io, roomInstance.getID(), user.getName());
+		this.roomsUpdateToAllUsers(io, roomsListJSON);
+	}
 };

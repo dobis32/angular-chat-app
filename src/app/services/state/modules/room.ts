@@ -9,11 +9,13 @@ export class RoomStateModule {
 	private _roomsList: Freshy<Array<ChatRoom>>;
 	private _currentRoom: Freshy<ChatRoom>;
 	private _usersInCurrentRoom: Freshy<Array<User>>;
+	private _userHasRoomPowers: Freshy<boolean>;
 
 	constructor(private socket: SocketService) {
 		this._roomsList = new Freshy<Array<ChatRoom>>([]);
 		this._currentRoom = new Freshy<ChatRoom>();
 		this._usersInCurrentRoom = new Freshy<Array<User>>();
+		this._userHasRoomPowers = new Freshy<boolean>(false);
 	}
 
 	createRoom(name: string, capacity: number, password: string, userID: string) {
@@ -30,9 +32,11 @@ export class RoomStateModule {
 		else return false;
 	}
 
-	joinRoom(user: User, room: ChatRoom, password?: string) {
-		if (room.joinable(password ? password : ''))
+	joinRoom(user: User, room: ChatRoom, password?: string): boolean {
+		if (room.joinable(user.getId(), password ? password : '')) {
 			this.socket.emit('join', { user: user.getId(), room: room.getRoomID() });
+			return true;
+		} else return false;
 	}
 
 	currentRoom(): Observable<ChatRoom> {
@@ -45,6 +49,10 @@ export class RoomStateModule {
 
 	roomsList(): Observable<Array<any>> {
 		return this._roomsList.observableData;
+	}
+
+	userIsAdmin(): Observable<boolean> {
+		return this._userHasRoomPowers.observableData;
 	}
 
 	userHasRoomPowers(user: User, room: ChatRoom): boolean {
@@ -68,17 +76,16 @@ export class RoomStateModule {
 		this._roomsList.refresh(rooms);
 	}
 
-	kickUserFromCurrentRoom(user: User) {
-		if (this._currentRoom.getData())
-			this.socket.emit('kick', { user: user.getId(), room: this._currentRoom.getData().getRoomID() });
-	}
-
-	updateCurrentRoomInstance(providedID?: string) {
+	updateCurrentRoomInstance(providedID?: string, user?: User) {
 		let roomID = providedID ? providedID : '';
 		let roomInstance = this.findRoomByID(roomID);
 
 		this._currentRoom.refresh(roomInstance);
 		this._usersInCurrentRoom.refresh(roomInstance ? roomInstance.getUsers() : []);
+		if (user) {
+			const hasPowers = this.userHasRoomPowers(user, roomInstance);
+			this._userHasRoomPowers.refresh(hasPowers);
+		}
 	}
 
 	userLeaveCurrentRoom(user: User): void {
@@ -121,16 +128,20 @@ export class RoomStateModule {
 		}
 	}
 
-	promoteUser(user: User) {
-		// TODO implement & unit test
+	promoteUser(user: User, room: ChatRoom) {
+		this.socket.emit('promote', { user: user.getId(), room: room.getRoomID() });
 	}
 
-	demoteUser(user: User) {
-		// TODO implement & unit test
+	demoteUser(user: User, room: ChatRoom) {
+		this.socket.emit('demote', { user: user.getId(), room: room.getRoomID() });
 	}
 
-	banUser(user: User) {
-		// TODO implement & unit test
+	kickUser(user: User, room: ChatRoom) {
+		this.socket.emit('kick', { user: user.getId(), room: room.getRoomID() });
+	}
+
+	banUser(user: User, room: ChatRoom) {
+		this.socket.emit('kick', { user: user.getId(), room: room.getRoomID(), ban: true });
 	}
 
 	_getSocketService(): SocketService {

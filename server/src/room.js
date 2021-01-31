@@ -19,6 +19,24 @@ module.exports = class Room {
 		this.bans = bans;
 	}
 
+	promoteUser(userToPromote) {
+		const isAdmin = this.admins.find((uid) => uid == userToPromote);
+		if (!isAdmin && this.admins.owner != userToPromote) this.admins.push(userToPromote);
+	}
+
+	demoteUser(userToDemote) {
+		const updatedAdmins = this.admins.filter((uid) => uid != userToDemote);
+		this.admins = updatedAdmins;
+	}
+
+	banUser(userID) {
+		this.bans.push(userID);
+	}
+
+	unbanUser(userID) {
+		this.bans = this.bans.filter((id) => id != userID);
+	}
+
 	getID() {
 		return this.id;
 	}
@@ -40,12 +58,10 @@ module.exports = class Room {
 	}
 
 	joinUser(userID) {
-		if (this.users.length < this.capacity) {
-			this.users.push(userID);
-			return true;
-		} else {
-			return false;
-		}
+		if (this.users.length >= this.capacity) return false;
+		if (this.bans.find((id) => id == userID)) return false;
+		this.users.push(userID);
+		return true;
 	}
 
 	updateCredentials(name, capacity, password) {

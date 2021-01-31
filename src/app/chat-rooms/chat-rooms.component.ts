@@ -73,7 +73,8 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 				console.log(error);
 			}
 		}
-		this.state.room.joinRoom(this._currentUser, room, inputPassword);
+		let result = this.state.room.joinRoom(this._currentUser, room, inputPassword);
+		if (!result) alert('Failed to join room');
 	}
 
 	leaveRoom(): void {
@@ -93,8 +94,8 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 		return this._currentRoom.getUsers();
 	}
 
-	currentUserHasRoomPowers(): boolean {
-		return this.state.room.userHasRoomPowers(this._currentUser, this._currentRoom);
+	currentUserHasRoomPowers(): Observable<boolean> {
+		return this.state.room.userIsAdmin();
 	}
 
 	async editCurrentRoom(): Promise<void> {
@@ -103,30 +104,30 @@ export class ChatRoomsComponent implements OnInit, OnDestroy {
 	}
 
 	async performUserAction(user: User) {
-		// TODO unit test
-
 		if (
 			this._currentUser &&
 			this._currentRoom &&
 			this.state.room.userHasRoomPowers(this._currentUser, this._currentRoom)
 		) {
 			const action = await this.state.modal.performUserAction(user);
-			console.log('PERFORM ACTION', action);
 			this.handleUserAction(action, user);
 		}
 	}
 
 	handleUserAction(action: string, user: User) {
-		// TODO unit test
+		// NOTE each case should have its own unit test!
 		switch (action) {
 			case 'promote':
+				this.state.room.promoteUser(user, this._currentRoom);
 				break;
 			case 'demote':
+				this.state.room.demoteUser(user, this._currentRoom);
 				break;
 			case 'kick':
-				this.state.room.kickUserFromCurrentRoom(user);
+				this.state.room.kickUser(user, this._currentRoom);
 				break;
 			case 'ban':
+				this.state.room.banUser(user, this._currentRoom);
 				break;
 		}
 	}

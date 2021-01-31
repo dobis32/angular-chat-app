@@ -178,7 +178,26 @@ describe('StateService', () => {
 	});
 
 	it('should have a function to handle a "join" socket event', () => {
+		const chatLogResetSpy = spyOn(service.chatLog, 'resetChatLog').and.callThrough();
+		const roomUpdateSpy = spyOn(service.room, 'updateCurrentRoomInstance').and.callThrough();
+
+		const eventData = { room: 'roomID' };
+
+		service.handleJoinEvent(eventData);
+
 		expect(typeof service.handleJoinEvent).toEqual('function');
+		expect(chatLogResetSpy).toHaveBeenCalled();
+		expect(roomUpdateSpy).toHaveBeenCalledWith(eventData.room);
+	});
+
+	it('should have a function to handle a "kick" socket event', () => {
+		const roomUpdateSpy = spyOn(service.room, 'updateCurrentRoomInstance').and.callThrough();
+		const eventData = { roomName: 'name', ban: true };
+
+		service.handleKickEvent(eventData);
+
+		expect(typeof service.handleKickEvent).toEqual('function');
+		expect(roomUpdateSpy).toHaveBeenCalled();
 	});
 
 	// Notification handlers

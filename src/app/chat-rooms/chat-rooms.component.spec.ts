@@ -47,7 +47,7 @@ describe('ChatRoomsComponent', () => {
 	it('should have a function for joining ChatRooms', () => {
 		let roomToJoin = new ChatRoom('id', 'name', 6, 'ownerID');
 		let joinSpy = spyOn(chatRoomsComponent.state.room, 'joinRoom').and.callFake((user: User, room: ChatRoom) => {
-			return Promise.resolve(true);
+			return true;
 		});
 
 		chatRoomsComponent.joinRoom(roomToJoin);
@@ -57,6 +57,7 @@ describe('ChatRoomsComponent', () => {
 	});
 
 	it('should use the app modal for prompting a user to enter a password when joining a private room', async () => {
+		chatRoomsComponent._setCurrentUser(new User('name', 'id'));
 		let modalSpy = spyOn(chatRoomsComponent.state.modal, 'promptRoomPassword').and.callFake(() => {
 			return Promise.resolve('input');
 		});
@@ -124,7 +125,7 @@ describe('ChatRoomsComponent', () => {
 		const user = new User('denny', dennyID);
 		const room = new ChatRoom('id', 'room', 6, dennyID, [ user ]);
 
-		let stateFnSpy = spyOn(chatRoomsComponent.state.room, 'userHasRoomPowers').and.callThrough();
+		let stateFnSpy = spyOn(chatRoomsComponent.state.room, 'userIsAdmin').and.callThrough();
 
 		chatRoomsComponent._setCurrentRoom(room);
 		chatRoomsComponent._setCurrentUser(user);
@@ -132,7 +133,7 @@ describe('ChatRoomsComponent', () => {
 		chatRoomsComponent.currentUserHasRoomPowers();
 
 		expect(typeof chatRoomsComponent.currentUserHasRoomPowers).toEqual('function');
-		expect(stateFnSpy).toHaveBeenCalledWith(user, room);
+		expect(stateFnSpy).toHaveBeenCalled();
 	});
 
 	it('should have a function for editing the current room', async () => {
@@ -154,6 +155,45 @@ describe('ChatRoomsComponent', () => {
 		expect(typeof chatRoomsComponent.editCurrentRoom).toEqual('function');
 		expect(modalSpy).toHaveBeenCalledWith(room);
 		expect(updateSpy).toHaveBeenCalledWith(newRoom, user);
+	});
+
+	it('should have a function for performing an action on a given user', async () => {
+		const admin = new User('admin', 'adminID');
+		const room = new ChatRoom('roomID', 'room', 6, admin.getId());
+		const userReceivingAction = new User('user', 'userID');
+		const action = 'action';
+		const powerCheckSpy = spyOn(chatRoomsComponent.state.room, 'userHasRoomPowers').and.callThrough();
+		const modalSpy = spyOn(chatRoomsComponent.state.modal, 'performUserAction').and.callFake(() => {
+			return Promise.resolve(action);
+		});
+		const handleSpy = spyOn(chatRoomsComponent, 'handleUserAction').and.callFake(() => {});
+
+		chatRoomsComponent._setCurrentRoom(room);
+		chatRoomsComponent._setCurrentUser(admin);
+
+		await chatRoomsComponent.performUserAction(userReceivingAction);
+
+		expect(typeof chatRoomsComponent.performUserAction);
+		expect(powerCheckSpy).toHaveBeenCalledWith(admin, room);
+		expect(modalSpy).toHaveBeenCalled();
+		expect(handleSpy).toHaveBeenCalledWith(action, userReceivingAction);
+	});
+
+	it('should not prompt the current user for an action to perform on another user if the current user does not have powers in the current room', () => {
+		const currentUser = new User('currUser', 'currUserID');
+		const room = new ChatRoom('roomID', 'room', 6, 'owner');
+		const userReceivingAction = new User('user', 'userID');
+		const action = 'action';
+		const modalSpy = spyOn(chatRoomsComponent.state.modal, 'performUserAction').and.callFake(() => {
+			return Promise.resolve(action);
+		});
+
+		chatRoomsComponent._setCurrentRoom(room);
+		chatRoomsComponent._setCurrentUser(currentUser);
+
+		chatRoomsComponent.performUserAction(userReceivingAction);
+
+		expect(modalSpy).toHaveBeenCalledTimes(0);
 	});
 
 	// Init
@@ -241,6 +281,62 @@ describe('ChatRoomsComponent', () => {
 		expect(typeof chatRoomsComponent.createRoomCallback).toEqual('function');
 		expect(createSpy).toHaveBeenCalledTimes(1);
 		expect(findSpy).toHaveBeenCalled();
+	});
+
+	it('should have a function to handle actions to be performed by a given user in a given room', () => {
+		expect(typeof chatRoomsComponent.handleUserAction).toEqual('function');
+	});
+
+	it('should be able to handle a "promote" user action', () => {
+		const actionSpy = spyOn(chatRoomsComponent.state.room, 'promoteUser').and.callFake(() => {});
+		const action = 'promote';
+		const user = new User('name', 'uid');
+		const currentRoom = new ChatRoom('roomID', 'name', 6, 'owner');
+
+		chatRoomsComponent._setCurrentRoom(currentRoom);
+
+		chatRoomsComponent.handleUserAction(action, user);
+
+		expect(actionSpy).toHaveBeenCalledWith(user, currentRoom);
+	});
+
+	it('should be able to handle a "demote" user action', () => {
+		const actionSpy = spyOn(chatRoomsComponent.state.room, 'demoteUser').and.callFake(() => {});
+		const action = 'demote';
+		const user = new User('name', 'uid');
+		const currentRoom = new ChatRoom('roomID', 'name', 6, 'owner');
+
+		chatRoomsComponent._setCurrentRoom(currentRoom);
+
+		chatRoomsComponent.handleUserAction(action, user);
+
+		expect(actionSpy).toHaveBeenCalledWith(user, currentRoom);
+	});
+
+	it('should be able to handle a "kick" user action', () => {
+		const actionSpy = spyOn(chatRoomsComponent.state.room, 'kickUser').and.callFake(() => {});
+		const action = 'kick';
+		const user = new User('name', 'uid');
+		const currentRoom = new ChatRoom('roomID', 'name', 6, 'owner');
+
+		chatRoomsComponent._setCurrentRoom(currentRoom);
+
+		chatRoomsComponent.handleUserAction(action, user);
+
+		expect(actionSpy).toHaveBeenCalledWith(user, currentRoom);
+	});
+
+	it('should be able to handle a "ban" user action', () => {
+		const actionSpy = spyOn(chatRoomsComponent.state.room, 'banUser').and.callFake(() => {});
+		const action = 'ban';
+		const user = new User('name', 'uid');
+		const currentRoom = new ChatRoom('roomID', 'name', 6, 'owner');
+
+		chatRoomsComponent._setCurrentRoom(currentRoom);
+
+		chatRoomsComponent.handleUserAction(action, user);
+
+		expect(actionSpy).toHaveBeenCalledWith(user, currentRoom);
 	});
 
 	// State
